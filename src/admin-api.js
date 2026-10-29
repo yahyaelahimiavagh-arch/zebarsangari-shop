@@ -98,10 +98,15 @@ async function failedLogins(env,key) {
   if(row && row.blocked_until_ms>now) return {blocked:true};
   return {blocked:false,count:row && now-row.window_start_ms<900000?row.failure_count:0,window:row && now-row.window_start_ms<900000?row.window_start_ms:now};
 }
-async function recordFailure(env,key,state) {
-  const count=state.count+1, now=Date.now();
-  await env.DB.prepare("INSERT INTO admin_login_attempts(ip_hash,failure_count,window_start_ms,blocked_until_ms) VALUES(?,?,?,?) ON CONFLICT(ip_hash) DO UPDATE SET failure_count=excluded.failure_count,window_start_ms=excluded.window_start_ms,blocked_until_ms=excluded.blocked_until_ms")
-    .bind(key,count,state.window,count>=5?now+900000:0).run();
+async function recordFailure(env,key) {
+  // Atomic increment: simultaneous guesses cannot reset the failure counter.
+  const now=Date.now();
+  const sql = "INSERT INTO admin_login_attempts(ip_hash,failure_count,window_start_ms,blocked_until_ms) VALUES(?,1,?,0) " +
+    "ON CONFLICT(ip_hash) DO UPDATE SET " +
+    "failure_count=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 1 ELSE admin_login_attempts.failure_count+1 END, " +
+    "window_start_ms=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN excluded.window_start_ms ELSE admin_login_attempts.window_start_ms END, " +
+    "blocked_until_ms=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 0 WHEN admin_login_attempts.failure_count+1>=5 THEN excluded.window_start_ms+900000 ELSE admin_login_attempts.blocked_until_ms END";
+  await env.DB.prepare(sql).bind(key,now).run();
 }
 function requireCsrf(request,session) {
   return originAllowed(request) && request.headers.get("x-csrf-token")===session.csrf;
@@ -165,7 +170,8 @@ async function uploadImage(request,env,productId) {
   const extension=mime==="image/png"?"png":mime==="image/jpeg"?"jpg":"webp";
   const key="p/"+productId+"/"+crypto.randomUUID()+"."+extension;
   const id=crypto.randomUUID();
-  const position=Number(await env.DB.prepare("SELECT COUNT(*) AS n FROM product_images WHERE product_id=?").bind(productId).first()?.then(x=>x?.n??0));
+  const currentCount=await env.DB.prepare("SELECT COUNT(*) AS n FROM product_images WHERE product_id=?").bind(productId).first();
+  const position=Number(currentCount?.n ?? 0);
   if(position>=10) return respond({error:"image_limit"},409);
   await env.IMAGES.put(key,bytes,{metadata:{mime}});
   try {
@@ -191,7 +197,7 @@ export async function serveMedia(request,env) {
 }
 export async function handleAdmin(request,env) {
   const path=new URL(request.url).pathname, method=request.method;
-  if(!env.DB || !env.ADMIN_PASSWORD || !env.SESSION_SECRET || env.SESSION_SECRET.length<32)
+  if(!env.DB || !env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length<12 || !env.SESSION_SECRET || env.SESSION_SECRET.length<32)
     return respond({error:"admin_not_configured"},503);
   // Make login fail closed when the D1 rate-limit table has not been migrated.
   if(path==="/api/admin/login" && method==="POST") {
@@ -204,7 +210,7 @@ export async function handleAdmin(request,env) {
     if(state.blocked) return respond({error:"try_later"},429);
     const supplied=typeof body.password==="string" ? body.password.slice(0,512) : "";
     if(!supplied || !await secureEqual(supplied,env.ADMIN_PASSWORD)) {
-      await recordFailure(env,ipKey,state);
+      await recordFailure(env,ipKey);
       return respond({error:"invalid_login"},401);
     }
     await env.DB.prepare("DELETE FROM admin_login_attempts WHERE ip_hash=?").bind(ipKey).run();
