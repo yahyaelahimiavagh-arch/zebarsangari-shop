@@ -1,6 +1,5 @@
 {
-  // Cloudflare Workers: storefront assets + a read-only API Worker.
-  // D1 database binding will be added after obtaining its Database ID.
+  // Cloudflare Workers: static storefront and read-only catalog API.
   "name": "zebarsangari-shop",
   "compatibility_date": "2026-10-29",
   "main": "./src/index.js",
@@ -8,5 +7,12 @@
     "directory": "./site",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zebarsangari-db",
+      "database_id": "462a80f6-4b91-4a6d-8205-7f46b7872fd0"
+    }
+  ]
 }
