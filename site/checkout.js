@@ -56,6 +56,13 @@ async function init(){
    subtotal+=p.priceToman*c.qty;
   }
   renderItems();renderChannels();
+  if(settings.cardNumber){
+   $("checkoutCardBlock").classList.remove("hidden");
+   $("checkoutCardNum").textContent=window.ZebarBank?.format(settings.cardNumber)||settings.cardNumber;
+   $("checkoutCardOwner").textContent="به نام: "+(settings.cardHolder||"");
+   const bank=window.ZebarBank?.identify(settings.cardNumber);
+   $("checkoutCardBank").textContent=bank?"بانک: "+bank.name:"";
+  }
   if(!$("channels").children.length){$("notReady").textContent="فروشگاه هنوز روش سفارشی تنظیم نکرده است.";return;}
   $("notReady").classList.add("hidden");$("checkoutArea").classList.remove("hidden");
  }catch(error){$("notReady").textContent=error.message;}
@@ -73,10 +80,21 @@ function done(){
   $("cardNum").textContent=settings.cardNumber.replace(/(\d{4})(?=\d)/g,"$1 ");
   $("cardOwner").textContent="به نام: "+settings.cardHolder;
   const bank=window.ZebarBank?.identify(settings.cardNumber);
-  $("cardBank").textContent=bank?"بانک صادرکننده (بر اساس پیش‌شماره): "+bank.name:"نام بانک از روی پیش‌شماره شناسایی نشد";
+  $("cardBank").textContent=bank?"بانک: "+bank.name:"";
  }
- if(settings.whatsapp)addLink("https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summary()),"ارسال پیام واتساپ");
- if(settings.telegram)addLink("https://t.me/"+settings.telegram,"بازکردن گفت‌وگوی تلگرام");
+ if(settings.whatsapp)addLink("https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summary()),"ارسال رسید از واتساپ");
+ if(settings.telegram)addLink("https://t.me/"+settings.telegram,"ارسال رسید از تلگرام");
+ if(settings.baleUsername){
+  addLink("https://ble.ir/"+settings.baleUsername,"ارسال رسید از بله");
+ }else if(settings.balePhone){
+  const phone=fmt(settings.balePhone);
+  const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.textContent="کپی شماره بله";
+  copy.onclick=()=>navigator.clipboard.writeText(phone).then(()=>message("شماره بله کپی شد.",true)).catch(()=>message("کپی شماره بله انجام نشد."));
+  $("contactLinks").append(copy);
+  addLink("https://web.bale.ai/","باز کردن بله");
+  $("balePhoneHelp").classList.remove("hidden");
+  $("balePhoneHelp").textContent="در بله با شماره "+phone+" مخاطب فروشگاه را پیدا کن و رسید را همراه با کد سفارش بفرست.";
+ }
  $("done").scrollIntoView({behavior:"smooth"});
 }
 $("orderForm").addEventListener("submit",async e=>{
@@ -93,27 +111,6 @@ $("orderForm").addEventListener("submit",async e=>{
 });
 $("copySummary").onclick=()=>navigator.clipboard.writeText(summary()).then(()=>message("متن سفارش کپی شد.",true)).catch(()=>message("کپی انجام نشد."));
 $("copyCard").onclick=()=>navigator.clipboard.writeText(settings.cardNumber).then(()=>message("شماره کارت کپی شد.",true)).catch(()=>message("کپی انجام نشد."));
-async function optimizeReceipt(file){
- const bitmap=await createImageBitmap(file),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
- const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
- canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
- for(const quality of [.86,.73,.59,.42]){
-  const result=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
-  if(result?.size<590000)return result;
- }
- throw Error("تصویر رسید بزرگ است؛ عکس کوچک‌تری انتخاب کن.");
-}
-$("sendReceipt").onclick=async()=>{
- const file=$("receiptInput").files?.[0];
- if(!order?.uploadToken||!file)return message("ابتدا سفارش را ثبت کن و عکس رسید را انتخاب کن.");
- const btn=$("sendReceipt");btn.disabled=true;
- try{
-  const blob=await optimizeReceipt(file);
-  await xjson(await fetch("/api/orders/"+order.orderId+"/receipt",
-   {method:"POST",headers:{"content-type":"image/webp","x-order-upload-token":order.uploadToken},body:blob}));
-  $("receiptInput").value="";btn.textContent="رسید ارسال شد";
-  message("رسید برای بررسی دستی فروشگاه ثبت شد؛ این پیام به معنی تأیید پرداخت نیست.",true);
- }catch(err){message("ارسال رسید ناموفق بود: "+err.message);btn.disabled=false;}
-};
+$("checkoutCopyCard").onclick=()=>navigator.clipboard.writeText(settings.cardNumber).then(()=>message("شماره کارت کپی شد.",true)).catch(()=>message("کپی انجام نشد."));
 init();
 })();
