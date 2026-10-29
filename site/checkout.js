@@ -72,6 +72,8 @@ function done(){
   $("cardBlock").classList.remove("hidden");
   $("cardNum").textContent=settings.cardNumber.replace(/(\d{4})(?=\d)/g,"$1 ");
   $("cardOwner").textContent="به نام: "+settings.cardHolder;
+  const bank=window.ZebarBank?.identify(settings.cardNumber);
+  $("cardBank").textContent=bank?"بانک صادرکننده (بر اساس پیش‌شماره): "+bank.name:"نام بانک از روی پیش‌شماره شناسایی نشد";
  }
  if(settings.whatsapp)addLink("https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summary()),"ارسال پیام واتساپ");
  if(settings.telegram)addLink("https://t.me/"+settings.telegram,"بازکردن گفت‌وگوی تلگرام");

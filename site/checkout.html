@@ -56,7 +56,7 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 <p>کد سفارش: <strong id="code" dir="ltr"></strong></p><p id="orderAmount"></p>
 <div class="notice">این کد تأیید پرداخت یا تضمین موجودی نیست. پیش از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</div>
 <div id="cardBlock" class="hidden">
-<h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p>
+<h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p><p id="cardBank" style="text-align:center;color:#986f7c;font-size:14px"></p>
 <button id="copyCard" class="secondary">کپی شماره کارت</button></div>
 <h2>ارتباط با فروشگاه</h2><div class="tools" id="contactLinks"></div>
 <button class="secondary" id="copySummary">کپی متن سفارش</button>
@@ -66,4 +66,4 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 <label class="field"><span>عکس رسید (JPEG/PNG/WebP)</span><input id="receiptInput" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <button id="sendReceipt" class="secondary">ارسال رسید برای بررسی</button>
 <p class="muted">اگر آپلود ناموفق بود، رسید را در واتساپ یا تلگرام همراه با کد سفارش بفرست.</p>
-</section></main><script src="/checkout.js" defer></script></body></html>
+</section></main><script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script></body></html>
