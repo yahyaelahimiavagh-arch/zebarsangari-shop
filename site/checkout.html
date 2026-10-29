@@ -44,8 +44,15 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 <label class="field"><span>شماره موبایل ایران</span><input id="buyerPhone" type="tel" required maxlength="18" placeholder="0912..." autocomplete="tel"></label>
 <label class="field"><span>شهر</span><input id="city" required maxlength="90" autocomplete="address-level2"></label>
 <label class="field"><span>آدرس تحویل</span><textarea id="address" required minlength="8" maxlength="350" autocomplete="street-address"></textarea></label>
-<h2>روش پیگیری و پرداخت</h2><div id="channels" class="channel-grid"></div>
-<div class="notice">پس از ثبت درخواست، کد سفارش دریافت می‌کنی. برای کارت‌به‌کارت، فقط بعد از هماهنگی مبلغ نهایی واریز کن؛ سپس رسید را بارگذاری کن یا در پیام‌رسان بفرست.</div>
+<h2>روش پیگیری سفارش</h2><div id="channels" class="channel-grid"></div>
+<div id="checkoutCardBlock" class="hidden" style="padding:16px;border:1px solid #e7d9d5;border-radius:12px;margin:16px 0">
+<h2>کارت‌به‌کارت</h2>
+<div class="card-number" id="checkoutCardNum"></div>
+<p id="checkoutCardOwner" style="text-align:center"></p>
+<p id="checkoutCardBank" style="text-align:center;color:#986f7c"></p>
+<button type="button" class="secondary" id="checkoutCopyCard">کپی شماره کارت</button>
+</div>
+<div class="notice">پس از ثبت سفارش، کد سفارش را همراه با تصویر رسید از طریق پیام‌رسان برای فروشگاه ارسال کن.</div>
 <label style="display:flex;align-items:start;gap:8px;font-size:13px;line-height:1.9;margin:18px 0">
 <input id="consent" type="checkbox" required style="width:auto;margin-top:5px">
 <span>می‌پذیرم که نام، شماره تماس و آدرس من برای پیگیری و ارسال سفارش نزد فروشگاه ذخیره شود و پرداخت به تأیید دستی نیاز دارد.</span></label>
@@ -54,16 +61,13 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 <section id="done" class="hidden">
 <h2>درخواست سفارش ثبت شد ♡</h2>
 <p>کد سفارش: <strong id="code" dir="ltr"></strong></p><p id="orderAmount"></p>
-<div class="notice">این کد تأیید پرداخت یا تضمین موجودی نیست. پیش از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</div>
+<div class="notice">سفارش برای بررسی ثبت شد؛ مبلغ نهایی و هزینه ارسال باید با فروشگاه تأیید شوند.</div>
 <div id="cardBlock" class="hidden">
 <h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p><p id="cardBank" style="text-align:center;color:#986f7c;font-size:14px"></p>
 <button id="copyCard" class="secondary">کپی شماره کارت</button></div>
-<h2>ارتباط با فروشگاه</h2><div class="tools" id="contactLinks"></div>
+<h2>ارسال رسید پرداخت</h2><div class="tools" id="contactLinks"></div>
 <button class="secondary" id="copySummary">کپی متن سفارش</button>
-<div class="notice">برای تلگرام متن را کپی کن و در گفت‌وگوی فروشگاه جای‌گذاری کن. ارسال پیام خودکار نیست.</div>
-<h2>بارگذاری رسید کارت‌به‌کارت</h2>
-<p class="muted">پس از واریز، عکس رسید را برای بررسی دستی فروشنده ارسال کن. رسید فقط برای مدیر فروشگاه قابل مشاهده است.</p>
-<label class="field"><span>عکس رسید (JPEG/PNG/WebP)</span><input id="receiptInput" type="file" accept="image/jpeg,image/png,image/webp"></label>
-<button id="sendReceipt" class="secondary">ارسال رسید برای بررسی</button>
-<p class="muted">اگر آپلود ناموفق بود، رسید را در واتساپ یا تلگرام همراه با کد سفارش بفرست.</p>
+<div class="notice">کد سفارش را در پیام بنویس و عکس رسید را داخل پیام‌رسان ضمیمه کن.</div>
+<p id="balePhoneHelp" class="muted hidden"></p>
+<p class="muted">رسید مستقیماً در پیام‌رسان برای فروشگاه ارسال می‌شود. این سایت فایل رسید ذخیره نمی‌کند.</p>
 </section></main><script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script></body></html>
