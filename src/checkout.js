@@ -76,10 +76,12 @@ function randomToken(){
 }
 function validationInput(body){
  if(!body||typeof body!=="object")throw Error("invalid_order");
- const buyer=str(body.buyerName,90),phone=norm(str(body.buyerPhone,20)).replace(/[^\d+]/g,"");
+ const buyer=str(body.buyerName,90);
+ const rawPhone=norm(str(body.buyerPhone,64));
+ const phone=rawPhone.replace(/[\s\-().\u200e\u200f\u202a-\u202e]/g,"");
  const city=str(body.city,90),address=str(body.address,350);
  const channel=body.channel;
- if(buyer.length<3||!/^(\+98|0)?9\d{9}$/.test(phone)||!city||address.length<8)
+ if(buyer.length<3||!/^\+?\d{7,20}$/.test(phone)||!city||address.length<8)
   throw Error("customer_details_required");
  if(!["whatsapp","telegram","card"].includes(channel))throw Error("invalid_channel");
  if(!Array.isArray(body.items)||!body.items.length||body.items.length>12)throw Error("invalid_items");

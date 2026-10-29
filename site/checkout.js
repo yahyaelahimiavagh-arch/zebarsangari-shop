@@ -5,7 +5,8 @@
 const $=id=>document.getElementById(id);
 const money=n=>(Number(n)||0).toLocaleString("fa-IR")+" تومان";
 const digits=s=>String(s??"").replace(/[۰-۹]/g,c=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(c))).replace(/[٠-٩]/g,c=>String("٠١٢٣٤٥٦٧٨٩".indexOf(c)));
-const phone=s=>digits(s).replace(/[\s\-()]/g,"").trim();
+const phone=s=>digits(s).replace(/[\s\-().\u200e\u200f\u202a-\u202e]/g,"").trim();
+const isValidPhone=s=>/^\+?\d{7,20}$/.test(phone(s));
 const key="zebarsangari_real_cart_v2";
 const messages={
   customer_details_required:"اطلاعات تحویل کامل نیست. نام، شماره موبایل، شهر و آدرس را بررسی کن.",
@@ -48,7 +49,7 @@ function validate(id){
  const raw=$(id).value.trim();
  let error="";
  if(id==="buyerName" && raw.length<3)error="نام و نام خانوادگی را کامل وارد کن.";
- if(id==="buyerPhone" && !/^(\+98|0)?9\d{9}$/.test(phone(raw)))error="شماره موبایل معتبر وارد کن؛ مثلاً 09121234567.";
+ if(id==="buyerPhone" && !isValidPhone(raw))error="شماره تماس معتبر وارد کن؛ برای شماره خارجی از + و کد کشور استفاده کن.";
  if(id==="city" && !raw)error="شهر را وارد کن.";
  if(id==="address" && raw.length<8)error="آدرس کامل شامل خیابان، پلاک و واحد را وارد کن.";
  fieldError(id,error);return !error;
@@ -184,7 +185,7 @@ function addMessenger(label,url,iconText){
 }
 function renderComplete(){
  $("orderCode").textContent=order.code;
- $("completeAmount").textContent="جمع کالاها: "+money(order.subtotalToman)+" — هزینه ارسال پس از هماهنگی مشخص می‌شود.";
+ $("completeAmountValue").textContent=money(order.subtotalToman);
  if(settings.cardNumber){
   $("paymentCard").hidden=false;$("noCard").hidden=true;
   $("cardNumber").textContent=window.ZebarBank?.format(settings.cardNumber)||settings.cardNumber;

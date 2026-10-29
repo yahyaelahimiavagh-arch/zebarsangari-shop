@@ -52,6 +52,10 @@ header{background:#fff;border-bottom:1px solid var(--line)}.head{max-width:1080p
 .center{text-align:center}.check{margin:0 auto 13px;width:49px;height:49px;border-radius:50%;background:#e9f4ed;color:#2a7852;display:grid;place-items:center;font-size:24px}
 .code{margin:13px 0;display:flex;justify-content:center;align-items:center;gap:10px;direction:ltr}.code strong{font-size:17px}
 hr{border:0;border-top:1px solid var(--line);margin:24px 0}
+.complete-total{background:#f8f0f1;border:1px solid #eddbe0;border-radius:13px;padding:19px 18px;margin-top:19px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}
+.complete-total-label{color:#806a73;font-size:13px;font-weight:650}
+.complete-total-value{font-size:clamp(24px,5vw,32px);font-weight:850;color:#2b2425;line-height:1.5;direction:rtl;font-variant-numeric:tabular-nums}
+.complete-total-note{color:#86797b;font-size:11px;line-height:1.9}
 .pay-card{background:#faf5f4;border:1px solid #e9dddd;border-radius:12px;padding:18px;text-align:center;margin-top:14px}
 .pay-card .bank{font-size:12px;color:var(--rose);margin:0 0 12px}
 .carddigits{direction:ltr;font-family:Tahoma,Arial,sans-serif;font-size:clamp(18px,3vw,24px);font-weight:bold;letter-spacing:1.5px;overflow-wrap:anywhere}
@@ -75,7 +79,7 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 <form id="detailsForm" novalidate>
 <div class="field"><label for="buyerName">نام و نام خانوادگی <span class="req">*</span></label><input id="buyerName" required autocomplete="name" maxlength="90" placeholder="نام کامل دریافت‌کننده"><span class="err" id="error-buyerName"></span></div>
 <div class="row">
-<div class="field"><label for="buyerPhone">شماره موبایل <span class="req">*</span></label><input id="buyerPhone" required type="tel" class="ltr" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="0912 123 4567"><span class="err" id="error-buyerPhone"></span><span class="hint">برای هماهنگی سفارش و ارسال</span></div>
+<div class="field"><label for="buyerPhone">شماره تماس (ایران یا خارج) <span class="req">*</span></label><input id="buyerPhone" required type="tel" class="ltr" inputmode="tel" autocomplete="tel" maxlength="48" placeholder="+90 555 123 4567"><span class="err" id="error-buyerPhone"></span><span class="hint">شماره هر کشور پذیرفته می‌شود؛ در صورت خارجی بودن، با + و کد کشور وارد کن.</span></div>
 <div class="field"><label for="city">شهر <span class="req">*</span></label><input id="city" required autocomplete="address-level2" maxlength="90" placeholder="مثلاً تهران"><span class="err" id="error-city"></span></div></div>
 <div class="field"><label for="address">آدرس تحویل <span class="req">*</span></label><textarea id="address" required rows="3" maxlength="350" autocomplete="street-address" placeholder="خیابان، کوچه، پلاک و واحد"></textarea><span class="err" id="error-address"></span></div>
 <label class="consent"><input id="consent" type="checkbox" required><span>با ذخیره این اطلاعات برای هماهنگی و ارسال سفارش موافقم.</span></label><div id="error-consent" class="err" style="color:#a33d4d"></div>
@@ -90,7 +94,11 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 <section class="panel" id="completeStage" hidden>
 <div class="center"><div class="check">✓</div><h2>درخواست سفارش ثبت شد</h2><p class="muted">کد سفارش را برای پیگیری نگه دار.</p>
 <div class="code"><strong id="orderCode"></strong><button id="copyCode" type="button" class="btn secondary">کپی کد</button></div></div>
-<div class="soft" style="margin-top:17px" id="completeAmount"></div><hr><h2>پرداخت کارت‌به‌کارت</h2><p class="step-intro">قبل از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</p>
+<div class="complete-total" id="completeAmount" role="status" aria-live="polite">
+<span class="complete-total-label">جمع مبلغ کالاها</span>
+<strong class="complete-total-value" id="completeAmountValue"></strong>
+<span class="complete-total-note">هزینه ارسال جداگانه محاسبه و با فروشگاه هماهنگ می‌شود.</span>
+</div><hr><h2>پرداخت کارت‌به‌کارت</h2><p class="step-intro">قبل از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</p>
 <div id="paymentCard" class="pay-card" hidden><p class="bank" id="bankName"></p><div class="carddigits" id="cardNumber"></div><p id="cardHolder" class="holder"></p><button type="button" id="copyCard" class="btn secondary">کپی شماره کارت</button><div id="copyFeedback" class="feedback" role="status"></div></div>
 <p id="noCard" class="soft" hidden>برای دریافت اطلاعات پرداخت با فروشگاه هماهنگ کن.</p>
 <hr><h2>ارسال رسید پرداخت</h2><p class="step-intro">پیام‌رسان را انتخاب کن و تصویر رسید را همراه کد سفارش داخل همان برنامه بفرست.</p>
