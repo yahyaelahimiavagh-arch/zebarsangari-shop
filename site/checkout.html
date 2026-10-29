@@ -1,73 +1,107 @@
 <!doctype html>
-<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
-<title>ثبت سفارش | زبرسنگری</title>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#fbf9f7">
+<title>تکمیل خرید | زبرسنگری</title>
 <style>
-:root{font-family:Tahoma,Arial,sans-serif;color:#292320;background:#faf6f3;--pink:#b47d8b;--line:#e7d9d5}
-*{box-sizing:border-box}body{margin:0}a{text-decoration:none;color:inherit}
-header{background:#fff;border-bottom:1px solid var(--line);padding:22px 5%;display:flex;justify-content:space-between;align-items:center}
-header strong{font-size:24px}header a{color:#8c6070}
-main{max-width:1040px;margin:30px auto 90px;padding:0 15px}
-h1{font-size:26px;margin:0 0 8px}h2{font-size:19px;margin:0 0 17px}
-p{line-height:2}.muted{color:#827476;font-size:13px}.cards{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;margin-top:24px}
-.panel{border:1px solid var(--line);background:#fff;padding:24px;border-radius:18px;box-shadow:0 8px 25px #3b242008;margin-bottom:18px}
-input,select,textarea,button{font:inherit}input,select,textarea{width:100%;border:1px solid #d9caca;border-radius:10px;padding:13px 12px;background:#fff;color:#302528;outline-color:#bc8896}
-textarea{min-height:90px;resize:vertical}.field{display:block;margin:13px 0;font-size:14px}.field span{display:block;margin-bottom:7px}
-button,.btn{border:0;border-radius:10px;padding:13px 18px;background:#292320;color:white;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;line-height:1.6}
-.btn.secondary,button.secondary{background:#fff;border:1px solid #d7c8c3;color:#2b2421}
-button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:none!important}
-.item{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
-.item:last-child{border-bottom:0}.item small{display:block;color:#8a7d7b;margin-top:6px}
-.money{font-weight:700;white-space:nowrap}.total{display:flex;justify-content:space-between;gap:16px;font-size:19px;margin:20px 0}
-.channel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.channel{border:1px solid #ddcbd0;padding:13px 7px;border-radius:12px;cursor:pointer;text-align:center;font-size:13px;display:flex;justify-content:center;gap:4px;align-items:center}
-.channel input{width:auto}.channel:has(input:checked){border-color:#b47d8b;background:#fcf0f2}
-.notice{background:#f5e7e9;border-radius:12px;padding:12px 16px;font-size:13px;line-height:2;color:#674752;margin:15px 0}
-#message{padding:12px 14px;background:#f5e1e5;border-radius:10px;margin:15px 0;color:#763f4c}
-#message.ok{background:#e8f3eb;color:#286743}
-.card-number{font-size:20px;direction:ltr;text-align:center;letter-spacing:1.4px;background:#fbf3f3;padding:15px;border-radius:12px;margin-top:10px}
-.tools{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
-#done{border:1px solid #dec2cd;background:#fff;border-radius:18px;padding:24px;margin:25px 0}
-@media(max-width:720px){.cards{grid-template-columns:1fr}.panel{padding:17px}header strong{font-size:20px}h1{font-size:23px}main{margin-top:22px}.channel-grid{grid-template-columns:1fr}}
+:root{font-family:"Vazirmatn","IRANSans","Segoe UI",Tahoma,Arial,sans-serif;color:#302b2a;background:#fbf9f7;--ink:#302b2a;--muted:#807678;--rose:#aa7886;--line:#e8dfe0}
+*{box-sizing:border-box}body{margin:0;font-size:14px}[hidden]{display:none!important}button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #c99ca9;outline-offset:2px}
+header{background:#fff;border-bottom:1px solid var(--line)}.head{max-width:1080px;margin:auto;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:9px;align-items:center}.brand b{font-size:20px}.brand i{font-style:normal;font-size:23px;display:grid;place-items:center;width:36px;height:36px;background:#f8e9ed;color:#985d70;border-radius:9px}
+.back{font-size:13px;color:var(--muted)}.wrap{max-width:1080px;margin:auto;padding:26px 22px 70px}
+.eyebrow{font-size:10px;letter-spacing:2px;color:var(--rose);margin:0 0 6px}h1{font-size:27px;margin:0 0 5px}h2{font-size:19px;margin:0 0 5px}.muted{color:var(--muted);font-size:12px;line-height:1.85;margin:0}
+.progress{list-style:none;padding:0;display:flex;align-items:center;gap:9px;margin:23px 0 24px}
+.progress li:not(.sep){display:flex;align-items:center;gap:7px;color:#a29899;font-size:12px;white-space:nowrap}
+.progress .number{width:26px;height:26px;display:grid;place-items:center;border:1px solid #ded4d4;border-radius:50%;font-size:12px;background:#fff}
+.progress li.active{color:#302b2a;font-weight:bold}.progress li.active .number{background:#302b2a;color:white;border-color:#302b2a}
+.progress li.done .number{background:#ece0e1;color:#78535e;border-color:#ece0e1}
+.progress .sep{height:1px;width:28px;background:#ddd4d3}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 305px;gap:22px;align-items:start}
+.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:25px 27px;box-shadow:0 7px 24px #33272a06}
+.content{min-width:0}.step-intro{color:var(--muted);font-size:12px;line-height:1.85;margin:0 0 19px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:block;margin:0 0 15px}.field label{display:block;font-weight:650;font-size:13px;margin-bottom:7px}
+.field input,.field textarea{width:100%;border:1px solid #ded4d5;background:#fff;border-radius:9px;padding:11px 13px;min-height:45px;color:#302b2a;font-size:15px;outline:0}
+.field input:focus,.field textarea:focus{border-color:#ae7c88;box-shadow:0 0 0 3px #f7eaee}
+.field input::placeholder,.field textarea::placeholder{color:#aaa0a2}.field textarea{min-height:88px;resize:vertical;line-height:1.8}
+.field input[aria-invalid=true],.field textarea[aria-invalid=true]{border-color:#c65463;background:#fffafa}
+.field .err{display:block;color:#a33d4d;font-size:12px;margin-top:5px;line-height:1.6}
+.field .hint{font-size:11px;color:#8f8385;margin-top:4px}
+.ltr{direction:ltr;text-align:left}.req{color:#b65c77}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.9;margin:2px 0 17px;color:#655c5e}
+.consent input{width:16px;height:16px;accent-color:#302b2a;margin-top:4px;flex:none}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.btn{border:0;display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:45px;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:750}
+.primary{background:#302b2a;color:#fff}.primary:hover{background:#4b373e}.secondary{background:white;color:#302b2a;border:1px solid #dbd1d2}.secondary:hover{background:#faf3f4}
+.btn:disabled{opacity:.5;cursor:not-allowed}.big{min-width:210px}
+.notice{font-size:12px;line-height:1.85;padding:12px 14px;border:1px solid #f0d9de;border-radius:9px;background:#fff2f4;color:#8d3d54;margin:0 0 17px}
+.notice.ok{background:#edf7ef;color:#28714d;border-color:#d8e9da}
+.state{background:white;border:1px solid var(--line);padding:28px;border-radius:12px;color:var(--muted)}
+.summary{position:sticky;top:20px}.summary-head{display:flex;justify-content:space-between;align-items:center}
+.summary-head h2{font-size:17px}.count{background:#f8eef0;color:#946977;border-radius:30px;font-size:11px;padding:5px 9px}
+.summary details{margin:12px 0 0}.summary summary{cursor:pointer;font-size:12px;color:var(--muted);padding:8px 0;list-style:none}.summary summary:after{content:"⌄";float:left}.summary details[open] summary:after{content:"⌃"}
+.lines{max-height:280px;overflow:auto}.item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid #eee7e8}
+.item b{font-size:12px;line-height:1.7}.item small{display:block;color:var(--muted);font-size:11px;margin-top:4px}.item .price{font-size:12px;font-weight:bold;white-space:nowrap}
+.totals{margin-top:14px;border-top:1px solid var(--line);padding-top:13px;display:grid;gap:13px}
+.totalrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}.totalrow b{color:var(--ink)}
+.totalrow.final{padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--ink);font-weight:bold}.totalrow.final b{font-size:18px}
+.summary-foot{font-size:11px;line-height:1.8;color:var(--muted);margin:15px 0 0}
+.review{border:1px solid #eee5e7;border-radius:11px;padding:16px;margin-top:14px}.review-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.review-head b{font-size:13px}.review-head button,.review-head a{border:0;background:transparent;color:var(--rose);font-size:12px}
+.review p{white-space:pre-line;color:#75696b;line-height:2;margin:8px 0 0;font-size:13px}
+.soft{background:#faf5f5;border-radius:9px;padding:12px 13px;color:#786c6e;font-size:12px;line-height:1.9;margin-top:16px}
+.center{text-align:center}.check{margin:0 auto 13px;width:49px;height:49px;border-radius:50%;background:#e9f4ed;color:#2a7852;display:grid;place-items:center;font-size:24px}
+.code{margin:13px 0;display:flex;justify-content:center;align-items:center;gap:10px;direction:ltr}.code strong{font-size:17px}
+hr{border:0;border-top:1px solid var(--line);margin:24px 0}
+.pay-card{background:#faf5f4;border:1px solid #e9dddd;border-radius:12px;padding:18px;text-align:center;margin-top:14px}
+.pay-card .bank{font-size:12px;color:var(--rose);margin:0 0 12px}
+.carddigits{direction:ltr;font-family:Tahoma,Arial,sans-serif;font-size:clamp(18px,3vw,24px);font-weight:bold;letter-spacing:1.5px;overflow-wrap:anywhere}
+.holder{font-size:12px;color:#71676a;margin:12px 0 16px}
+.linklist{display:grid;gap:9px;margin:16px 0}.link{display:flex;align-items:center;gap:10px;border:1px solid #e5dcde;border-radius:10px;padding:12px 13px;font-size:13px;font-weight:bold}
+.link:hover{background:#faf4f5}.link i{font-style:normal;width:31px;height:31px;border-radius:8px;background:#f8ebee;color:#8c5667;display:grid;place-items:center}
+.link .arrow{margin-right:auto;color:#a59b9b}.feedback{min-height:1em;font-size:12px;color:#28714d;margin:9px 0}
+@media(max-width:780px){.head{padding:13px 16px}.wrap{padding:19px 14px 45px}.layout{display:flex;flex-direction:column;gap:14px}.content{width:100%}.summary{width:100%;position:static;order:-1}.summary.panel{padding:15px 17px}.summary details{margin-top:4px}.panel{padding:19px 17px;border-radius:13px}.progress{gap:5px;margin:18px 0}.progress li:not(.sep){font-size:11px;gap:5px}.progress .sep{width:14px}.progress .number{width:24px;height:24px}h1{font-size:23px}}
+@media(max-width:520px){.row{grid-template-columns:1fr;gap:0}.actions .primary{flex:1}.carddigits{font-size:19px}.brand b{font-size:18px}}
 </style></head>
-<body><header><strong>زبرسنگری</strong><a href="/">بازگشت به فروشگاه ←</a></header>
-<main><h1>ثبت درخواست سفارش</h1>
-<p class="muted">پرداخت و تأیید سفارش به‌صورت دستی انجام می‌شود.</p>
-<div id="message" class="hidden" role="status" aria-live="polite"></div>
-<div id="notReady" class="notice">در حال بررسی روش‌های سفارش...</div>
-<div id="checkoutArea" class="cards hidden">
-<section class="panel"><h2>سبد خرید شما</h2><div id="lineItems"></div>
-<div class="total"><span>جمع کالاها</span><span id="total" class="money">۰ تومان</span></div>
-<p class="muted">هزینه ارسال جداگانه محاسبه می‌شود.</p></section>
-<section class="panel"><h2>مشخصات دریافت‌کننده</h2>
-<form id="orderForm">
-<label class="field"><span>نام و نام خانوادگی</span><input id="buyerName" required maxlength="90" minlength="3" autocomplete="name"></label>
-<label class="field"><span>شماره موبایل ایران</span><input id="buyerPhone" type="tel" required maxlength="18" placeholder="0912..." autocomplete="tel"></label>
-<label class="field"><span>شهر</span><input id="city" required maxlength="90" autocomplete="address-level2"></label>
-<label class="field"><span>آدرس تحویل</span><textarea id="address" required minlength="8" maxlength="350" autocomplete="street-address"></textarea></label>
-<h2>روش پیگیری سفارش</h2><div id="channels" class="channel-grid"></div>
-<div id="checkoutCardBlock" class="hidden" style="padding:16px;border:1px solid #e7d9d5;border-radius:12px;margin:16px 0">
-<h2>کارت‌به‌کارت</h2>
-<div class="card-number" id="checkoutCardNum"></div>
-<p id="checkoutCardOwner" style="text-align:center"></p>
-<p id="checkoutCardBank" style="text-align:center;color:#986f7c"></p>
-<button type="button" class="secondary" id="checkoutCopyCard">کپی شماره کارت</button>
+<body>
+<header><div class="head"><a class="brand" href="/"><i>♡</i><b>زبرسنگری</b></a><a href="/#products" class="back">بازگشت به فروشگاه ←</a></div></header>
+<div class="wrap">
+<p class="eyebrow">ZEBAR SANGARI · CHECKOUT</p><h1>تکمیل خرید</h1><p class="muted">خرید مهمان · بدون نیاز به ثبت‌نام</p>
+<ol class="progress" aria-label="مراحل سفارش"><li class="active" id="progress1" aria-current="step"><span class="number">۱</span>اطلاعات تحویل</li><li class="sep"></li><li id="progress2"><span class="number">۲</span>بررسی سفارش</li><li class="sep"></li><li id="progress3"><span class="number">۳</span>پرداخت و رسید</li></ol>
+<div id="loading" class="state" role="status">در حال دریافت سبد خرید…</div>
+<div id="alert" class="notice" role="alert" hidden></div>
+<div class="layout" id="layout" hidden>
+<div class="content">
+<section class="panel" id="detailsStage"><h2>اطلاعات دریافت‌کننده</h2><p class="step-intro">برای هماهنگی و ارسال سفارش، اطلاعات زیر لازم است.</p>
+<form id="detailsForm" novalidate>
+<div class="field"><label for="buyerName">نام و نام خانوادگی <span class="req">*</span></label><input id="buyerName" required autocomplete="name" maxlength="90" placeholder="نام کامل دریافت‌کننده"><span class="err" id="error-buyerName"></span></div>
+<div class="row">
+<div class="field"><label for="buyerPhone">شماره موبایل <span class="req">*</span></label><input id="buyerPhone" required type="tel" class="ltr" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="0912 123 4567"><span class="err" id="error-buyerPhone"></span><span class="hint">برای هماهنگی سفارش و ارسال</span></div>
+<div class="field"><label for="city">شهر <span class="req">*</span></label><input id="city" required autocomplete="address-level2" maxlength="90" placeholder="مثلاً تهران"><span class="err" id="error-city"></span></div></div>
+<div class="field"><label for="address">آدرس تحویل <span class="req">*</span></label><textarea id="address" required rows="3" maxlength="350" autocomplete="street-address" placeholder="خیابان، کوچه، پلاک و واحد"></textarea><span class="err" id="error-address"></span></div>
+<label class="consent"><input id="consent" type="checkbox" required><span>با ذخیره این اطلاعات برای هماهنگی و ارسال سفارش موافقم.</span></label><div id="error-consent" class="err" style="color:#a33d4d"></div>
+<div class="actions"><button class="btn primary big" type="submit">ادامه و بررسی سفارش ←</button></div>
+<p class="muted" style="margin-top:12px">در این مرحله پرداختی انجام نمی‌شود.</p>
+</form></section>
+<section class="panel" id="reviewStage" hidden><h2>بررسی نهایی سفارش</h2><p class="step-intro">اطلاعات را پیش از ثبت بررسی کن.</p>
+<div class="review"><div class="review-head"><b>اطلاعات تحویل</b><button type="button" id="editDetails">ویرایش</button></div><p id="reviewAddress"></p></div>
+<div class="review"><div class="review-head"><b>اقلام سفارش</b><a href="/#products">ویرایش سبد</a></div><p id="reviewItems"></p><p id="reviewTotal" style="font-weight:bold;font-size:18px;color:#302b2a"></p></div>
+<div class="soft">هزینه ارسال پس از هماهنگی مشخص می‌شود. ثبت درخواست به معنی پرداخت یا رزرو قطعی کالا نیست.</div>
+<div class="actions"><button type="button" id="submitOrder" class="btn primary big">ثبت درخواست سفارش</button><button type="button" id="backDetails" class="btn secondary">بازگشت</button></div></section>
+<section class="panel" id="completeStage" hidden>
+<div class="center"><div class="check">✓</div><h2>درخواست سفارش ثبت شد</h2><p class="muted">کد سفارش را برای پیگیری نگه دار.</p>
+<div class="code"><strong id="orderCode"></strong><button id="copyCode" type="button" class="btn secondary">کپی کد</button></div></div>
+<hr><h2>پرداخت کارت‌به‌کارت</h2><p class="step-intro">قبل از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</p>
+<div id="paymentCard" class="pay-card" hidden><p class="bank" id="bankName"></p><div class="carddigits" id="cardNumber"></div><p id="cardHolder" class="holder"></p><button type="button" id="copyCard" class="btn secondary">کپی شماره کارت</button><div id="copyFeedback" class="feedback" role="status"></div></div>
+<p id="noCard" class="soft" hidden>برای دریافت اطلاعات پرداخت با فروشگاه هماهنگ کن.</p>
+<hr><h2>ارسال رسید پرداخت</h2><p class="step-intro">پیام‌رسان را انتخاب کن و تصویر رسید را همراه کد سفارش داخل همان برنامه بفرست.</p>
+<div id="messengerLinks" class="linklist"></div>
+<button type="button" id="copyMessage" class="btn secondary">کپی متن سفارش</button><div id="messageFeedback" class="feedback" role="status"></div><p id="baleHelp" class="muted" hidden></p>
+<p class="muted" style="margin-top:13px">رسید روی سایت ذخیره نمی‌شود. پرداخت پس از بررسی فروشگاه تأیید می‌شود.</p></section>
 </div>
-<div class="notice">پس از ثبت، کد سفارش را همراه رسید بفرست.</div>
-<label style="display:flex;align-items:start;gap:8px;font-size:13px;line-height:1.9;margin:18px 0">
-<input id="consent" type="checkbox" required style="width:auto;margin-top:5px">
-<span>با ذخیره اطلاعات تماس و آدرس برای ارسال سفارش موافقم.</span></label>
-<button id="place" class="full" type="submit">ثبت درخواست سفارش</button>
-</form></section></div>
-<section id="done" class="hidden">
-<h2>درخواست سفارش ثبت شد ♡</h2>
-<p>کد سفارش: <strong id="code" dir="ltr"></strong></p><p id="orderAmount"></p>
-<div class="notice">سفارش ثبت شد؛ تأیید پرداخت با فروشگاه است.</div>
-<div id="cardBlock" class="hidden">
-<h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p><p id="cardBank" style="text-align:center;color:#986f7c;font-size:14px"></p>
-<button id="copyCard" class="secondary">کپی شماره کارت</button></div>
-<h2>ارسال رسید پرداخت</h2><div class="tools" id="contactLinks"></div>
-<button class="secondary" id="copySummary">کپی متن سفارش</button>
-<div class="notice">عکس رسید و کد سفارش را در پیام‌رسان بفرست.</div>
-<p id="balePhoneHelp" class="muted hidden"></p>
-<p class="muted">رسید در این سایت آپلود یا ذخیره نمی‌شود.</p>
-</section></main><script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script></body></html>
+<aside id="summaryCard" class="panel summary" aria-label="خلاصه سبد خرید"><div class="summary-head"><h2>خلاصه سفارش</h2><span id="itemCount" class="count"></span></div>
+<details id="orderDetails" open><summary>نمایش اقلام سبد</summary><div class="lines" id="cartLines"></div></details>
+<div class="totals"><div class="totalrow"><span>جمع کالاها</span><b id="subtotal"></b></div><div class="totalrow"><span>هزینه ارسال</span><span>پس از هماهنگی</span></div><div class="totalrow final"><span>مجموع کالاها</span><b id="finalTotal"></b></div></div>
+<p class="summary-foot">هزینه ارسال به مبلغ فوق اضافه می‌شود.</p></aside>
+</div></div>
+<script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script>
+</body></html>
