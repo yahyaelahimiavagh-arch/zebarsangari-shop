@@ -7,9 +7,9 @@ const toman=n=>fa(n)+" تومان";
 const label={women:"زنانه",men:"مردانه",kids:"بچگانه",socks:"جوراب",accessories:"اکسسوری"};
 const cartKey="zebarsangari_real_cart_v2";
 const modal=$("product-modal"),drawer=$("drawer"),overlay=$("overlay");
-let catalog=[],cart=[],settings={},loaded=false,category="all",query="",sort="latest",selected=null,selSize="",selColor="",lastFocus=null;
+let catalog=[],cart=[],settings={},loaded=false,category="all",query="",sort="latest",selected=null,selSize="",selColor="",modalImageIdx=0,lastFocus=null;
 const validImage=key=>typeof key==="string" && /^p\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(webp|png|jpg)$/.test(key);
-const imageOf=p=>{const k=p.images?.[0]?.key;return validImage(k)?"/media/"+k:null;};
+const imageOf=(p,index=0)=>{const k=p.images?.[index]?.key;return validImage(k)?"/media/"+k:null;};
 const stockOf=p=>p.variants.reduce((sum,v)=>sum+Math.max(0,Number(v.stock)||0),0);
 const uniq=items=>[...new Set(items)];
 const activeVariants=p=>p?.variants?.filter(v=>Number(v.stock)>0)||[];
@@ -34,8 +34,8 @@ function placeholder(){
  div.innerHTML='<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M35 19c-2-6 2-10 7-10s9 4 9 9c0 5-10 7-10 14L12 52c-4 3-2 8 2 8h55c4 0 6-5 2-8L41 32"/><path d="M41 43c-4-7-12-2-12 4s12 12 12 12 12-7 12-12-8-11-12-4Z"/></svg>';
  return div;
 }
-function picture(product){
- const url=imageOf(product);
+function picture(product,index=0){
+ const url=imageOf(product,index);
  if(!url)return placeholder();
  const img=document.createElement("img");img.loading="lazy";img.alt=product.title;
  img.src=url;img.onerror=()=>img.replaceWith(placeholder());
@@ -84,7 +84,7 @@ function renderProducts(){
  }
 }
 function setCategory(value){
- category=label[value]||value==="all"?value:"all";
+ category=(value==="all"||Object.prototype.hasOwnProperty.call(label,value))?value:"all";
  document.querySelectorAll("[data-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.filter===category)));
  renderProducts();
 }
@@ -142,14 +142,31 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeLayers();close
 function openProduct(id){
  selected=byId(id);if(!selected)return;
  const vs=activeVariants(selected);
- selSize=vs[0]?.size||"";selColor=vs[0]?.color||"";
+ selSize=vs[0]?.size||"";selColor=vs[0]?.color||"";modalImageIdx=0;
  renderModal();openLayer("modal");
 }
 function renderModal(){
  const p=selected;if(!p)return;
  const box=$("modal-content");box.replaceChildren();
  const row=document.createElement("div");row.className="modal-grid";
- const art=document.createElement("div");art.className="modal-picture";art.append(picture(p));
+ const art=document.createElement("div");art.className="modal-picture";
+ const gallery=p.images?.filter(i=>validImage(i.key))||[];
+ if(modalImageIdx>=gallery.length)modalImageIdx=0;
+ const image=document.createElement("div");image.className="gallery-primary";
+ image.append(picture({...p,images:gallery},modalImageIdx));
+ art.append(image);
+ if(gallery.length>1){
+  const strip=document.createElement("div");strip.className="gallery-strip";
+  gallery.forEach((photo,index)=>{
+   const button=document.createElement("button");button.type="button";
+   button.className="gallery-thumb"+(index===modalImageIdx?" current":"");
+   button.ariaLabel="نمایش تصویر "+fa(index+1);
+   const thumb=document.createElement("img");thumb.alt=photo.alt||("نمای "+fa(index+1)+" محصول");thumb.src="/media/"+photo.key;thumb.loading="lazy";
+   button.append(thumb);button.onclick=()=>{modalImageIdx=index;renderModal();};
+   strip.append(button);
+  });
+  art.append(strip);
+ }
  const info=document.createElement("div");info.className="modal-details";
  const caption=document.createElement("small");caption.className="caption";caption.textContent=(label[p.category]||"محصول")+" / زبرسنگری";
  const title=document.createElement("h2");title.textContent=p.title;
