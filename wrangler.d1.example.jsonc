@@ -1,0 +1,18 @@
+{
+  // EXAMPLE ONLY: Do not overwrite wrangler.jsonc until D1 exists.
+  "name": "zebarsangari-shop",
+  "compatibility_date": "2026-10-29",
+  "main": "./src/index.js",
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zebarsangari-db",
+      "database_id": "REPLACE_WITH_D1_DATABASE_UUID"
+    }
+  ]
+}
