@@ -51,7 +51,7 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <label class="field">شماره تماس فروشگاه<input id="shopPhone" inputmode="tel" dir="ltr"></label>
 <label class="field">شماره تلفن بله<input id="shopBalePhone" inputmode="tel" dir="ltr" placeholder="0912..."></label>
 <label class="field">شناسه بله (اختیاری، برای لینک مستقیم)<input id="shopBaleUsername" dir="ltr" placeholder="zebarsangarishop"></label>
-<label class="field">شماره کارت ۱۶ رقمی (اختیاری)<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24" placeholder="برای تست پیام‌رسان‌ها خالی بگذار"><small class="muted">شماره کارت واقعی فقط پس از راه‌اندازی سفارش‌ها لازم است؛ شماره ساختگی ممکن است پذیرفته نشود.</small><small id="bankDetection" class="muted" role="status" aria-live="polite">بانک پس از واردکردن ۶ رقم اول شناسایی می‌شود.</small></label>
+<label class="field">شماره کارت ۱۶ رقمی (اختیاری)<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24" placeholder="برای تست پیام‌رسان‌ها خالی بگذار"><small class="muted">شماره کارت واقعی فقط پس از راه‌اندازی سفارش‌ها لازم است؛ شماره ساختگی ممکن است پذیرفته نشود.</small><small id="bankDetection" class="muted" role="status" aria-live="polite"></small></label>
 <label class="field wide">نام صاحب کارت<input id="shopCardHolder" maxlength="100"></label>
 <label class="field wide" style="flex-direction:row;gap:10px;align-items:center">
 <input type="checkbox" style="width:auto" id="shopOrdersEnabled">
@@ -266,7 +266,7 @@ function updateBankDetection(){
  const result=window.ZebarBank?.identify(value);
  const label=$("bankDetection");
  if(!value)label.textContent="شماره کارت اختیاری است؛ برای آزمایش پیام‌رسان‌ها خالی بگذار.";
- else if(value.length<6)label.textContent="برای تشخیص بانک حداقل ۶ رقم اول را وارد کن.";
+ else if(value.length<6)label.textContent="";
  else if(result)label.textContent="بانک: "+result.name;
  else label.textContent="بانک شناسایی نشد.";
 }
