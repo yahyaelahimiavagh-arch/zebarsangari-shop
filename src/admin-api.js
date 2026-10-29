@@ -208,7 +208,7 @@ export async function handleAdmin(request,env) {
     let state;
     try {state=await failedLogins(env,ipKey);} catch {return respond({error:"login_rate_limit_not_ready"},503);}
     if(state.blocked) return respond({error:"try_later"},429);
-    const supplied=typeof body.password==="string" ? body.password.slice(0,512) : "";
+    const supplied=body && typeof body.password==="string" ? body.password.slice(0,512) : "";
     if(!supplied || !await secureEqual(supplied,env.ADMIN_PASSWORD)) {
       await recordFailure(env,ipKey);
       return respond({error:"invalid_login"},401);
