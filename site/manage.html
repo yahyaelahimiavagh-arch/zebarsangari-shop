@@ -46,10 +46,10 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <p class="muted">این اطلاعات در دیتابیس ذخیره می‌شود؛ شماره کارت و راه‌های تماس برای خریداران قابل مشاهده هستند. رمز مدیریت را اینجا وارد نکن.</p>
 <form id="settingsForm">
 <div class="grid">
-<label class="field">شماره واتساپ با کد کشور (بدون +؛ مثلاً 98912...)<input id="shopWhatsapp" inputmode="tel" dir="ltr" placeholder="98912..."></label>
+<label class="field">شماره واتساپ با کد کشور (بدون +؛ مثلاً 98912... یا 90555...)<input id="shopWhatsapp" inputmode="tel" dir="ltr" placeholder="98912..."></label>
 <label class="field">نام کاربری تلگرام (بدون @)<input id="shopTelegram" dir="ltr" placeholder="username"></label>
 <label class="field">شماره تماس فروشگاه<input id="shopPhone" inputmode="tel" dir="ltr"></label>
-<label class="field">شماره کارت ۱۶ رقمی<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24"></label>
+<label class="field">شماره کارت ۱۶ رقمی (اختیاری)<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24" placeholder="برای تست پیام‌رسان‌ها خالی بگذار"><small class="muted">شماره کارت واقعی فقط پس از راه‌اندازی سفارش‌ها لازم است؛ شماره ساختگی ممکن است پذیرفته نشود.</small></label>
 <label class="field wide">نام صاحب کارت<input id="shopCardHolder" maxlength="100"></label>
 <label class="field wide" style="flex-direction:row;gap:10px;align-items:center">
 <input type="checkbox" style="width:auto" id="shopOrdersEnabled">
@@ -132,6 +132,16 @@ async function api(path,opts={}) {
     throw Error("به‌دلیل چند تلاش ناموفق، ورود قفل شده است؛ حتی رمز صحیح هم پذیرفته نمی‌شود. دوباره"+duration+" امتحان کن.");
   }
   if(data.error==="invalid_login") throw Error("رمز واردشده صحیح نیست.");
+  const labels={
+   card_checksum_invalid:"شماره کارت معتبر نیست. شماره ۱۶ رقمی باید از کنترل بانکی عبور کند. برای تست واتساپ و تلگرام، شماره کارت و نام صاحب کارت را خالی بگذار.",
+   invalid_card_number:"شماره کارت باید دقیقاً ۱۶ رقم باشد.",
+   card_and_owner_required:"شماره کارت و نام صاحب کارت باید هر دو وارد شوند یا هر دو خالی باشند.",
+   invalid_telegram_username:"نام کاربری تلگرام معتبر نیست؛ بدون @ و حداقل ۵ کاراکتر انگلیسی وارد کن.",
+   invalid_phone:"شماره تماس فروشگاه معتبر نیست.",
+   whatsapp_international_digits_required:"شماره واتساپ باید با کد کشور و بدون + و صفر ابتدایی باشد؛ مثلاً 98912... یا 90555...",
+   configure_contact_first:"برای فعال کردن سفارش، حداقل یکی از روش‌های واتساپ، تلگرام یا کارت‌به‌کارت را تنظیم کن."
+  };
+  if(labels[data.error])throw Error(labels[data.error]);
   throw Error(data.error||"خطای سرور ("+response.status+")");
  }
  return data;
@@ -242,8 +252,23 @@ async function loadShopSettings(){
  $("shopCardHolder").value=data.cardHolder||"";
  $("shopOrdersEnabled").checked=Boolean(data.ordersEnabled);
 }
+$("shopCardNumber").addEventListener("input",()=>$("shopCardNumber").setCustomValidity(""));
 $("settingsForm").onsubmit=async e=>{
- e.preventDefault();$("saveSettings").disabled=true;
+ e.preventDefault();
+ const cardRaw=$("shopCardNumber").value.replace(/[ -]/g,"").replace(/[۰-۹]/g,c=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(c))).replace(/[٠-٩]/g,c=>String("٠١٢٣٤٥٦٧٨٩".indexOf(c)));
+ if(cardRaw){
+  let sum=0;
+  for(let i=0;i<cardRaw.length;i++){
+   const n=Number(cardRaw[i]),x=i%2===0?n*2:n;
+   sum+=x>9?x-9:x;
+  }
+  if(!/^\d{16}$/.test(cardRaw)||sum%10!==0){
+   $("shopCardNumber").setCustomValidity("شماره کارت آزمایشی معتبر نیست. برای تست بدون کارت، این فیلد و نام صاحب کارت را خالی بگذار.");
+   $("shopCardNumber").reportValidity();return;
+  }
+ }
+ $("shopCardNumber").setCustomValidity("");
+ $("saveSettings").disabled=true;
  try {
   await api("/api/admin/shop-settings",{method:"PUT",json:{
    whatsapp:$("shopWhatsapp").value,telegram:$("shopTelegram").value,phone:$("shopPhone").value,
