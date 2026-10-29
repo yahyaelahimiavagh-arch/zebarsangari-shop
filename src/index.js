@@ -1,3 +1,4 @@
+import {handleAdmin, serveMedia} from "./admin-api.js";
 // Worker entry point: static storefront + read-only catalog API. No checkout/admin writes.
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -53,6 +54,9 @@ async function catalog(env, category) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith("/media/")) return serveMedia(request,env);
+    if (url.pathname === "/admin.html") return Response.redirect(new URL("/manage.html",request.url),302);
+    if (url.pathname.startsWith("/api/admin/")) return handleAdmin(request,env);
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
     }
