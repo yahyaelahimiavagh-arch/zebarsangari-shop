@@ -1,5 +1,5 @@
 // Manual checkout for Zebar Sangari. No gateway / automated payment confirmation.
-// Customer receipts are private objects under receipt/* in KV; only authenticated admin can read them.
+// Receipts are sent by customers through messaging apps, never uploaded to this Worker.
 const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
 const json=(body,status=200,headers={})=>new Response(JSON.stringify(body),{status,headers:{...H,...headers}});
 const norm=x=>String(x??"").replace(/[۰-۹]/g,c=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(c))).replace(/[٠-٩]/g,c=>String("٠١٢٣٤٥٦٧٨٩".indexOf(c)));
@@ -18,10 +18,16 @@ async function bodyJson(req,max=12000){
  if(body.length>max)throw Error("payload_too_large");
  return JSON.parse(body);
 }
-const settingsOf = async db => db.prepare("SELECT whatsapp,telegram,phone,card_number,card_holder,orders_enabled FROM shop_settings WHERE id=1").first();
+const settingsOf = async db => {
+ const main=await db.prepare("SELECT whatsapp,telegram,phone,card_number,card_holder,orders_enabled FROM shop_settings WHERE id=1").first();
+ let bale={};
+ try{bale=await db.prepare("SELECT bale_phone,bale_username FROM shop_bale_settings WHERE id=1").first()||{};}
+ catch(error){if(!String(error?.message||error).includes("no such table"))throw error;}
+ return {...main,...bale};
+};
 const publicSettings=s=>({
  whatsapp:s?.whatsapp||"",telegram:s?.telegram||"",phone:s?.phone||"",
- cardNumber:s?.card_number||"",cardHolder:s?.card_holder||"",
+ cardNumber:s?.card_number||"",cardHolder:s?.card_holder||"",balePhone:s?.bale_phone||"",baleUsername:s?.bale_username||"",
  ordersEnabled:Boolean(s?.orders_enabled)
 });
 function validateSettings(data){
@@ -30,6 +36,10 @@ function validateSettings(data){
  const telegram=str(data.telegram,32).replace(/^@/,"");
  const cardNumber=card(data.cardNumber||"");
  const cardHolder=str(data.cardHolder,100);
+ const balePhone=norm(str(data.balePhone,20)).replace(/[^\d+]/g,"");
+ const baleUsername=str(data.baleUsername,32).replace(/^@/,"");
+ if(balePhone && !/^\+?\d{10,15}$/.test(balePhone))throw Error("invalid_bale_phone");
+ if(baleUsername && !/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(baleUsername))throw Error("invalid_bale_username");
  if(whatsapp && !/^[1-9]\d{7,14}$/.test(whatsapp))throw Error("whatsapp_international_digits_required");
  if(phone && !/^\+?\d{7,15}$/.test(phone))throw Error("invalid_phone");
  if(telegram && !/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(telegram))throw Error("invalid_telegram_username");
@@ -45,7 +55,7 @@ function validateSettings(data){
  if(Boolean(cardNumber)!==Boolean(cardHolder))throw Error("card_and_owner_required");
  const enabled=data.ordersEnabled===true;
  if(enabled && !(whatsapp||telegram||cardNumber))throw Error("configure_contact_first");
- return {whatsapp,telegram,phone,cardNumber,cardHolder,enabled};
+ return {whatsapp,telegram,phone,cardNumber,cardHolder,balePhone,baleUsername,enabled};
 }
 async function orderRate(env,req){
  const ip=req.headers.get("CF-Connecting-IP")||"unknown";
@@ -114,8 +124,8 @@ async function createOrder(request,env){
   lines.push({row,qty:line.quantity,total,unit});
  }
  const orderId=crypto.randomUUID(),code="ZS-"+new Date().toISOString().slice(0,10).replace(/-/g,"")+"-"+orderId.slice(0,8).toUpperCase();
- const token=randomToken();
- const tokenHash=await hash(token);
+ // Legacy schema still requires a token hash; no upload token is provided to customers.
+ const tokenHash=await hash(randomToken());
  const stmts=[env.DB.prepare(
   "INSERT INTO manual_orders(id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,upload_token_hash,ip_hash) "+
   "VALUES(?,?,?,?,?,?,?,'pending',?,?,?)"
@@ -126,35 +136,8 @@ async function createOrder(request,env){
   ).bind(crypto.randomUUID(),orderId,line.row.product_id,line.row.variant_id,line.row.title_fa,line.row.size_label,line.row.color_label,line.qty,line.unit,line.total));
  }
  await env.DB.batch(stmts);
- return json({ok:true,code,orderId,uploadToken:token,subtotalToman:subtotal,status:"pending",manualReview:true,
+ return json({ok:true,code,orderId,subtotalToman:subtotal,status:"pending",manualReview:true,
   note:"سفارش فقط درخواست ثبت شده است؛ پرداخت و موجودی تا تایید فروشنده قطعی نیست."},201);
-}
-const imageMime=data=>{
- if(data.length>=12 && String.fromCharCode(...data.slice(0,4))==="RIFF" && String.fromCharCode(...data.slice(8,12))==="WEBP")return "image/webp";
- if(data.length>=8 && data[0]===137&&data[1]===80&&data[2]===78&&data[3]===71)return "image/png";
- if(data.length>=3 && data[0]===255&&data[1]===216&&data[2]===255)return "image/jpeg";
- return null;
-};
-async function receiptUpload(request,env,orderId){
- if(!sameOrigin(request))return json({error:"invalid_origin"},403);
- if(!env.DB||!env.IMAGES)return json({error:"receipt_storage_not_configured"},503);
- const token=request.headers.get("x-order-upload-token")||"";
- if(!/^[a-f0-9]{64}$/.test(token))return json({error:"invalid_upload_token"},403);
- const row=await env.DB.prepare("SELECT upload_token_hash,status,receipt_object_key FROM manual_orders WHERE id=?").bind(orderId).first();
- if(!row || await hash(token)!==row.upload_token_hash)return json({error:"invalid_upload_token"},403);
- if(!["pending","receipt_submitted"].includes(row.status))return json({error:"order_closed"},409);
- if(row.receipt_object_key)return json({error:"receipt_already_uploaded"},409);
- const data=new Uint8Array(await request.arrayBuffer());
- if(data.length<100||data.length>600000)return json({error:"receipt_size_limit"},413);
- const mime=imageMime(data);
- if(!mime || request.headers.get("content-type")?.split(";")[0]!==mime)return json({error:"invalid_image_format"},400);
- const key="receipts/"+orderId+"/"+crypto.randomUUID()+".webp";
- await env.IMAGES.put(key,data,{metadata:{mime,kind:"private_receipt"}});
- try{
-  const result=await env.DB.prepare("UPDATE manual_orders SET receipt_object_key=?,receipt_mime=?,receipt_uploaded_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'),status='receipt_submitted',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND receipt_object_key IS NULL AND status='pending'").bind(key,mime,orderId).run();
-  if(!result.meta?.changes){await env.IMAGES.delete(key);return json({error:"receipt_conflict"},409);}
- }catch(error){await env.IMAGES.delete(key);throw error;}
- return json({ok:true,message:"رسید برای بررسی دستی فروشگاه دریافت شد. تایید پرداخت خودکار نیست."},201);
 }
 export async function handlePublicCheckout(request,env){
  const url=new URL(request.url),path=url.pathname;
@@ -164,8 +147,7 @@ export async function handlePublicCheckout(request,env){
    return json(publicSettings(await settingsOf(env.DB)));
   }
   if(path==="/api/orders" && request.method==="POST")return await createOrder(request,env);
-  const match=path.match(/^\/api\/orders\/([a-f0-9-]{36})\/receipt$/);
-  if(match && request.method==="POST")return await receiptUpload(request,env,match[1]);
+  if(/^\/api\/orders\/[a-f0-9-]{36}\/receipt$/.test(path))return json({error:"receipt_upload_disabled"},410);
   return json({error:"not_found"},404);
  }catch(e){
   console.error("Checkout exception",e?.message);
@@ -174,7 +156,7 @@ export async function handlePublicCheckout(request,env){
 }
 function adminSettings(data){
  return {whatsapp:data?.whatsapp||"",telegram:data?.telegram||"",phone:data?.phone||"",
- cardNumber:data?.card_number||"",cardHolder:data?.card_holder||"",ordersEnabled:Boolean(data?.orders_enabled)};
+ cardNumber:data?.card_number||"",cardHolder:data?.card_holder||"",balePhone:data?.bale_phone||"",baleUsername:data?.bale_username||"",ordersEnabled:Boolean(data?.orders_enabled)};
 }
 async function adminOrders(request,env){
  const u=new URL(request.url),path=u.pathname,method=request.method;
@@ -183,31 +165,34 @@ async function adminOrders(request,env){
  if(path==="/api/admin/shop-settings" && method==="PUT"){
   let input,p;
   try{input=await bodyJson(request);p=validateSettings(input);}catch(e){return json({error:e.message||"invalid_settings"},400);}
-  await env.DB.prepare(
+  let baleReady=true;
+  try{await env.DB.prepare("SELECT id FROM shop_bale_settings WHERE id=1").first();}
+  catch(error){
+   if(!String(error?.message||error).includes("no such table"))throw error;
+   baleReady=false;
+  }
+  if(!baleReady && (p.balePhone||p.baleUsername))return json({error:"bale_settings_migration_required"},503);
+  const mainUpdate=env.DB.prepare(
    "UPDATE shop_settings SET whatsapp=?,telegram=?,phone=?,card_number=?,card_holder=?,orders_enabled=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=1"
-  ).bind(p.whatsapp,p.telegram,p.phone,p.cardNumber,p.cardHolder,p.enabled?1:0).run();
+  ).bind(p.whatsapp,p.telegram,p.phone,p.cardNumber,p.cardHolder,p.enabled?1:0);
+  if(baleReady){
+   const baleUpdate=env.DB.prepare("INSERT INTO shop_bale_settings(id,bale_phone,bale_username) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET bale_phone=excluded.bale_phone,bale_username=excluded.bale_username,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')").bind(p.balePhone,p.baleUsername);
+   await env.DB.batch([mainUpdate,baleUpdate]);
+  }else await mainUpdate.run();
   return json({ok:true});
  }
  if(path==="/api/admin/orders" && method==="GET"){
-  const rows=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,receipt_object_key,created_at FROM manual_orders ORDER BY created_at DESC LIMIT 80").all();
-  return json({orders:(rows.results||[]).map(r=>({...r,hasReceipt:!!r.receipt_object_key,receipt_object_key:undefined}))});
+  const rows=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,created_at FROM manual_orders ORDER BY created_at DESC LIMIT 80").all();
+  return json({orders:rows.results||[]});
  }
- const m=path.match(/^\/api\/admin\/orders\/([a-f0-9-]{36})(?:\/(receipt|status))?$/);
+ const m=path.match(/^\/api\/admin\/orders\/([a-f0-9-]{36})(?:\/(status))?$/);
  if(!m)return json({error:"not_found"},404);
  const id=m[1],sub=m[2]||"";
- if(sub==="receipt" && method==="GET"){
-  const row=await env.DB.prepare("SELECT receipt_object_key,receipt_mime FROM manual_orders WHERE id=?").bind(id).first();
-  if(!row?.receipt_object_key)return json({error:"not_found"},404);
-  if(!env.IMAGES)return json({error:"receipt_storage_unavailable"},503);
-  const stored=await env.IMAGES.get(row.receipt_object_key,"arrayBuffer");
-  if(!stored)return json({error:"receipt_not_ready"},404);
-  return new Response(stored,{headers:{"content-type":row.receipt_mime||"application/octet-stream","cache-control":"no-store","x-content-type-options":"nosniff","content-disposition":"inline"}});
- }
  if(sub==="status" && method==="PATCH"){
   let body;try{body=await bodyJson(request);}catch{return json({error:"invalid_json"},400);}
   const status=body?.status;
   if(!["pending","receipt_submitted","confirmed","shipped","cancelled"].includes(status))return json({error:"invalid_status"},400);
-  const row=await env.DB.prepare("SELECT status,receipt_object_key FROM manual_orders WHERE id=?").bind(id).first();
+  const row=await env.DB.prepare("SELECT status FROM manual_orders WHERE id=?").bind(id).first();
   if(!row)return json({error:"not_found"},404);
   if(row.status==="cancelled" && status!=="cancelled")return json({error:"cancelled_order_locked"},409);
   if(status==="shipped" && row.status!=="confirmed" && row.status!=="shipped")return json({error:"confirm_first"},409);
@@ -215,7 +200,7 @@ async function adminOrders(request,env){
   return json({ok:true,status});
  }
  if(!sub && method==="GET"){
-  const order=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,receipt_uploaded_at,created_at FROM manual_orders WHERE id=?").bind(id).first();
+  const order=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,created_at FROM manual_orders WHERE id=?").bind(id).first();
   if(!order)return json({error:"not_found"},404);
   const lines=await env.DB.prepare("SELECT product_title,size_label,color_label,quantity,unit_price_toman,line_total_toman FROM manual_order_lines WHERE order_id=?").bind(id).all();
   return json({order,lines:lines.results||[]});
