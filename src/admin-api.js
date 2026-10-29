@@ -95,15 +95,21 @@ async function ownerIpKey(request,secret) {
 async function failedLogins(env,key) {
   const now=Date.now();
   const row=await env.DB.prepare("SELECT failure_count, window_start_ms, blocked_until_ms FROM admin_login_attempts WHERE ip_hash=?").bind(key).first();
-  if(row && row.blocked_until_ms>now) return {blocked:true};
-  return {blocked:false,count:row && now-row.window_start_ms<900000?row.failure_count:0,window:row && now-row.window_start_ms<900000?row.window_start_ms:now};
+  const stillInWindow=Boolean(row && now>=row.window_start_ms && now-row.window_start_ms<900000);
+  // Fail closed even for records written during the temporary 25-attempt testing period.
+  // This check is before password validation: a blocked IP cannot log in with a correct password.
+  const lockUntil=Math.max(
+    Number(row?.blocked_until_ms)||0,
+    stillInWindow && row.failure_count>=5 ? Number(row.window_start_ms)+900000 : 0
+  );
+  if(lockUntil>now) return {blocked:true,retryAfterSeconds:Math.ceil((lockUntil-now)/1000)};
+  return {blocked:false,count:stillInWindow?row.failure_count:0,window:stillInWindow?row.window_start_ms:now};
 }
 async function recordFailure(env,key) {
   // Atomic increment: simultaneous guesses cannot reset the failure counter.
   const now=Date.now();
-  // Temporary testing allowance expires automatically at 19:00 Istanbul on 29 Oct 2026.
-  // A limit remains in place on the publicly accessible login endpoint.
-  const failureLimit=now<Date.parse("2026-10-29T16:00:00Z")?25:5;
+  // Fixed five-failure limit, including during development and after deployments.
+  const failureLimit=5;
   const sql = "INSERT INTO admin_login_attempts(ip_hash,failure_count,window_start_ms,blocked_until_ms) VALUES(?,1,?,0) " +
     "ON CONFLICT(ip_hash) DO UPDATE SET " +
     "failure_count=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 1 ELSE admin_login_attempts.failure_count+1 END, " +
@@ -210,12 +216,15 @@ export async function handleAdmin(request,env) {
     const ipKey=await ownerIpKey(request,env.SESSION_SECRET);
     let state;
     try {state=await failedLogins(env,ipKey);} catch {return respond({error:"login_rate_limit_not_ready"},503);}
-    if(state.blocked) return respond({error:"try_later"},429);
+    if(state.blocked) return respond({error:"try_later",retryAfterSeconds:state.retryAfterSeconds},429,{"retry-after":String(state.retryAfterSeconds)});
     const supplied=body && typeof body.password==="string" ? body.password.slice(0,512) : "";
     if(!supplied || !await secureEqual(supplied,env.ADMIN_PASSWORD)) {
       await recordFailure(env,ipKey);
       return respond({error:"invalid_login"},401);
     }
+    // Recheck the persisted lock before issuing a session, even when the supplied password is correct.
+    const latest=await failedLogins(env,ipKey);
+    if(latest.blocked) return respond({error:"try_later",retryAfterSeconds:latest.retryAfterSeconds},429,{"retry-after":String(latest.retryAfterSeconds)});
     await env.DB.prepare("DELETE FROM admin_login_attempts WHERE ip_hash=?").bind(ipKey).run();
     const token=await issueSession(env.SESSION_SECRET);
     return respond({ok:true},200, {"set-cookie":cookieString(token)});
