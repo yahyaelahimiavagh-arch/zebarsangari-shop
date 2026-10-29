@@ -49,6 +49,8 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <label class="field">شماره واتساپ با کد کشور (بدون +؛ مثلاً 98912... یا 90555...)<input id="shopWhatsapp" inputmode="tel" dir="ltr" placeholder="98912..."></label>
 <label class="field">نام کاربری تلگرام (بدون @)<input id="shopTelegram" dir="ltr" placeholder="username"></label>
 <label class="field">شماره تماس فروشگاه<input id="shopPhone" inputmode="tel" dir="ltr"></label>
+<label class="field">شماره تلفن بله<input id="shopBalePhone" inputmode="tel" dir="ltr" placeholder="0912..."></label>
+<label class="field">شناسه بله (اختیاری، برای لینک مستقیم)<input id="shopBaleUsername" dir="ltr" placeholder="zebarsangarishop"></label>
 <label class="field">شماره کارت ۱۶ رقمی (اختیاری)<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24" placeholder="برای تست پیام‌رسان‌ها خالی بگذار"><small class="muted">شماره کارت واقعی فقط پس از راه‌اندازی سفارش‌ها لازم است؛ شماره ساختگی ممکن است پذیرفته نشود.</small><small id="bankDetection" class="muted" role="status" aria-live="polite">بانک پس از واردکردن ۶ رقم اول شناسایی می‌شود.</small></label>
 <label class="field wide">نام صاحب کارت<input id="shopCardHolder" maxlength="100"></label>
 <label class="field wide" style="flex-direction:row;gap:10px;align-items:center">
@@ -103,7 +105,7 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
 <h2>سفارش‌های دریافتی</h2><button type="button" class="secondary" id="reloadOrders">بروزرسانی سفارش‌ها</button>
 </div>
-<p class="muted">رسید بانکی فقط نشانه ارسال ادعای پرداخت است؛ برای تغییر وضعیت به «تأیید شده» حتماً واریز را در حساب بانکی بررسی کن.</p>
+<p class="muted">مشتری تصویر رسید را در پیام‌رسان می‌فرستد. قبل از تأیید پرداخت، واریز را در حساب بانکی بررسی کن.</p>
 <div id="ordersList"></div>
 <div id="orderDetails" class="hidden" style="margin-top:15px;border-top:1px solid #e9dad6;padding-top:15px"></div>
 </section>
@@ -140,7 +142,10 @@ async function api(path,opts={}) {
    invalid_telegram_username:"نام کاربری تلگرام معتبر نیست؛ بدون @ و حداقل ۵ کاراکتر انگلیسی وارد کن.",
    invalid_phone:"شماره تماس فروشگاه معتبر نیست.",
    whatsapp_international_digits_required:"شماره واتساپ باید با کد کشور و بدون + و صفر ابتدایی باشد؛ مثلاً 98912... یا 90555...",
-   configure_contact_first:"برای فعال کردن سفارش، حداقل یکی از روش‌های واتساپ، تلگرام یا کارت‌به‌کارت را تنظیم کن."
+   configure_contact_first:"برای فعال کردن سفارش، حداقل یکی از روش‌های واتساپ، تلگرام یا کارت‌به‌کارت را تنظیم کن.",
+   invalid_bale_phone:"شماره تلفن بله معتبر نیست.",
+   invalid_bale_username:"شناسه بله باید حداقل ۵ کاراکتر انگلیسی داشته باشد.",
+   bale_settings_migration_required:"جدول تنظیمات بله هنوز در D1 ساخته نشده است."
   };
   if(labels[data.error])throw Error(labels[data.error]);
   throw Error(data.error||"خطای سرور ("+response.status+")");
@@ -249,6 +254,8 @@ async function loadShopSettings(){
  $("shopWhatsapp").value=data.whatsapp||"";
  $("shopTelegram").value=data.telegram||"";
  $("shopPhone").value=data.phone||"";
+ $("shopBalePhone").value=data.balePhone||"";
+ $("shopBaleUsername").value=data.baleUsername||"";
  $("shopCardNumber").value=data.cardNumber||"";
  updateBankDetection();
  $("shopCardHolder").value=data.cardHolder||"";
@@ -260,8 +267,8 @@ function updateBankDetection(){
  const label=$("bankDetection");
  if(!value)label.textContent="شماره کارت اختیاری است؛ برای آزمایش پیام‌رسان‌ها خالی بگذار.";
  else if(value.length<6)label.textContent="برای تشخیص بانک حداقل ۶ رقم اول را وارد کن.";
- else if(result)label.textContent="بانک احتمالی صادرکننده: "+result.name+" (بر اساس پیش‌شماره؛ نه تأیید مالکیت یا فعال بودن کارت)";
- else label.textContent="بانک با پیش‌شماره فعلی شناخته نشد؛ صحت شماره کارت جداگانه بررسی می‌شود.";
+ else if(result)label.textContent="بانک: "+result.name;
+ else label.textContent="بانک شناسایی نشد.";
 }
 $("shopCardNumber").addEventListener("input",()=>{
  $("shopCardNumber").setCustomValidity("");
@@ -286,6 +293,7 @@ $("settingsForm").onsubmit=async e=>{
  try {
   await api("/api/admin/shop-settings",{method:"PUT",json:{
    whatsapp:$("shopWhatsapp").value,telegram:$("shopTelegram").value,phone:$("shopPhone").value,
+   balePhone:$("shopBalePhone").value,baleUsername:$("shopBaleUsername").value,
    cardNumber:$("shopCardNumber").value,cardHolder:$("shopCardHolder").value,
    ordersEnabled:$("shopOrdersEnabled").checked
   }});
@@ -301,7 +309,7 @@ async function loadOrders(){
  for(const o of data.orders){
   const card=document.createElement("div");card.style.cssText="padding:14px;margin-bottom:12px;border:1px solid #e9dad6;border-radius:13px";
   const title=document.createElement("strong");title.textContent=o.code+" — "+o.buyer_name;
-  const sub=document.createElement("p");sub.className="muted";sub.textContent="وضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman)+" | "+(o.hasReceipt?"دارای رسید":"بدون رسید");
+  const sub=document.createElement("p");sub.className="muted";sub.textContent="وضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman);
   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="جزئیات و مدیریت";
   btn.onclick=()=>showOrder(o.id);
   card.append(title,sub,btn);list.append(card);
@@ -333,19 +341,7 @@ async function showOrder(id){
    catch(e){msg(e.message)}
   };
   const row=document.createElement("div");row.className="buttons";row.append(select,save);box.append(row);
-  const receiptBtn=document.createElement("button");receiptBtn.type="button";receiptBtn.className="secondary";
-  receiptBtn.textContent="مشاهده رسید خصوصی";
-  receiptBtn.onclick=async()=>{
-   try{
-    const res=await fetch("/api/admin/orders/"+id+"/receipt",{credentials:"same-origin",cache:"no-store"});
-    if(!res.ok)throw Error("رسیدی یافت نشد یا هنوز همگام‌سازی نشده است.");
-    const blob=await res.blob(),object=URL.createObjectURL(blob);
-    const img=document.createElement("img");img.alt="رسید سفارش";img.style.cssText="width:100%;max-width:440px;margin-top:15px;border-radius:10px";
-    img.onload=()=>setTimeout(()=>URL.revokeObjectURL(object),90000);
-    img.src=object;box.append(img);
-   }catch(e){msg(e.message)}
-  };
-  box.append(receiptBtn);box.scrollIntoView({behavior:"smooth"});
+box.scrollIntoView({behavior:"smooth"});
  }catch(e){msg("خطا در خواندن سفارش: "+e.message)}
 }
 $("reloadOrders").onclick=()=>loadOrders().catch(e=>msg(e.message));
