@@ -8,6 +8,7 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*", "/media/*", "/admin.html", "/manage.html"]
   },
+  "secrets": {"required": ["ADMIN_PASSWORD", "SESSION_SECRET"]},
   "kv_namespaces": [
     {
       "binding": "IMAGES",
