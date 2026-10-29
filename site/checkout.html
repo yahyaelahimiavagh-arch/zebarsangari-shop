@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>ثبت سفارش | زبرسنگری</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;color:#292320;background:#faf6f3;--pink:#b47d8b;--line:#e7d9d5}
+*{box-sizing:border-box}body{margin:0}a{text-decoration:none;color:inherit}
+header{background:#fff;border-bottom:1px solid var(--line);padding:22px 5%;display:flex;justify-content:space-between;align-items:center}
+header strong{font-size:24px}header a{color:#8c6070}
+main{max-width:1040px;margin:30px auto 90px;padding:0 15px}
+h1{font-size:26px;margin:0 0 8px}h2{font-size:19px;margin:0 0 17px}
+p{line-height:2}.muted{color:#827476;font-size:13px}.cards{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;margin-top:24px}
+.panel{border:1px solid var(--line);background:#fff;padding:24px;border-radius:18px;box-shadow:0 8px 25px #3b242008;margin-bottom:18px}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;border:1px solid #d9caca;border-radius:10px;padding:13px 12px;background:#fff;color:#302528;outline-color:#bc8896}
+textarea{min-height:90px;resize:vertical}.field{display:block;margin:13px 0;font-size:14px}.field span{display:block;margin-bottom:7px}
+button,.btn{border:0;border-radius:10px;padding:13px 18px;background:#292320;color:white;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;line-height:1.6}
+.btn.secondary,button.secondary{background:#fff;border:1px solid #d7c8c3;color:#2b2421}
+button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:none!important}
+.item{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
+.item:last-child{border-bottom:0}.item small{display:block;color:#8a7d7b;margin-top:6px}
+.money{font-weight:700;white-space:nowrap}.total{display:flex;justify-content:space-between;gap:16px;font-size:19px;margin:20px 0}
+.channel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.channel{border:1px solid #ddcbd0;padding:13px 7px;border-radius:12px;cursor:pointer;text-align:center;font-size:13px;display:flex;justify-content:center;gap:4px;align-items:center}
+.channel input{width:auto}.channel:has(input:checked){border-color:#b47d8b;background:#fcf0f2}
+.notice{background:#f5e7e9;border-radius:12px;padding:12px 16px;font-size:13px;line-height:2;color:#674752;margin:15px 0}
+#message{padding:12px 14px;background:#f5e1e5;border-radius:10px;margin:15px 0;color:#763f4c}
+#message.ok{background:#e8f3eb;color:#286743}
+.card-number{font-size:20px;direction:ltr;text-align:center;letter-spacing:1.4px;background:#fbf3f3;padding:15px;border-radius:12px;margin-top:10px}
+.tools{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+#done{border:1px solid #dec2cd;background:#fff;border-radius:18px;padding:24px;margin:25px 0}
+@media(max-width:720px){.cards{grid-template-columns:1fr}.panel{padding:17px}header strong{font-size:20px}h1{font-size:23px}main{margin-top:22px}.channel-grid{grid-template-columns:1fr}}
+</style></head>
+<body><header><strong>زبرسنگری</strong><a href="/">بازگشت به فروشگاه ←</a></header>
+<main><h1>ثبت درخواست سفارش</h1>
+<p class="muted">پرداخت آنلاین خودکار فعال نیست. بعد از ثبت سفارش، مبلغ نهایی شامل هزینه احتمالی ارسال را با فروشنده هماهنگ کن. عکس رسید به‌تنهایی تأیید پرداخت نیست.</p>
+<div id="message" class="hidden" role="status" aria-live="polite"></div>
+<div id="notReady" class="notice">در حال بررسی روش‌های سفارش...</div>
+<div id="checkoutArea" class="cards hidden">
+<section class="panel"><h2>سبد خرید شما</h2><div id="lineItems"></div>
+<div class="total"><span>جمع کالاها</span><span id="total" class="money">۰ تومان</span></div>
+<p class="muted">هزینه ارسال در این مبلغ نیست و باید با فروشگاه تأیید شود. موجودی هنگام تأیید دستی دوباره بررسی می‌شود.</p></section>
+<section class="panel"><h2>مشخصات دریافت‌کننده</h2>
+<form id="orderForm">
+<label class="field"><span>نام و نام خانوادگی</span><input id="buyerName" required maxlength="90" minlength="3" autocomplete="name"></label>
+<label class="field"><span>شماره موبایل ایران</span><input id="buyerPhone" type="tel" required maxlength="18" placeholder="0912..." autocomplete="tel"></label>
+<label class="field"><span>شهر</span><input id="city" required maxlength="90" autocomplete="address-level2"></label>
+<label class="field"><span>آدرس تحویل</span><textarea id="address" required minlength="8" maxlength="350" autocomplete="street-address"></textarea></label>
+<h2>روش پیگیری و پرداخت</h2><div id="channels" class="channel-grid"></div>
+<div class="notice">پس از ثبت درخواست، کد سفارش دریافت می‌کنی. برای کارت‌به‌کارت، فقط بعد از هماهنگی مبلغ نهایی واریز کن؛ سپس رسید را بارگذاری کن یا در پیام‌رسان بفرست.</div>
+<label style="display:flex;align-items:start;gap:8px;font-size:13px;line-height:1.9;margin:18px 0">
+<input id="consent" type="checkbox" required style="width:auto;margin-top:5px">
+<span>می‌پذیرم که نام، شماره تماس و آدرس من برای پیگیری و ارسال سفارش نزد فروشگاه ذخیره شود و پرداخت به تأیید دستی نیاز دارد.</span></label>
+<button id="place" class="full" type="submit">ثبت درخواست سفارش</button>
+</form></section></div>
+<section id="done" class="hidden">
+<h2>درخواست سفارش ثبت شد ♡</h2>
+<p>کد سفارش: <strong id="code" dir="ltr"></strong></p><p id="orderAmount"></p>
+<div class="notice">این کد تأیید پرداخت یا تضمین موجودی نیست. پیش از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</div>
+<div id="cardBlock" class="hidden">
+<h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p>
+<button id="copyCard" class="secondary">کپی شماره کارت</button></div>
+<h2>ارتباط با فروشگاه</h2><div class="tools" id="contactLinks"></div>
+<button class="secondary" id="copySummary">کپی متن سفارش</button>
+<div class="notice">برای تلگرام متن را کپی کن و در گفت‌وگوی فروشگاه جای‌گذاری کن. ارسال پیام خودکار نیست.</div>
+<h2>بارگذاری رسید کارت‌به‌کارت</h2>
+<p class="muted">پس از واریز، عکس رسید را برای بررسی دستی فروشنده ارسال کن. رسید فقط برای مدیر فروشگاه قابل مشاهده است.</p>
+<label class="field"><span>عکس رسید (JPEG/PNG/WebP)</span><input id="receiptInput" type="file" accept="image/jpeg,image/png,image/webp"></label>
+<button id="sendReceipt" class="secondary">ارسال رسید برای بررسی</button>
+<p class="muted">اگر آپلود ناموفق بود، رسید را در واتساپ یا تلگرام همراه با کد سفارش بفرست.</p>
+</section></main><script src="/checkout.js" defer></script></body></html>
