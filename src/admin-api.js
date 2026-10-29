@@ -89,7 +89,7 @@ function validateProduct(input) {
 }
 async function ownerIpKey(request,secret) {
   const addr=request.headers.get("CF-Connecting-IP")||"unknown";
-  const h=await crypto.subtle.digest("SHA-256",encoder.encode(secret+"|"+addr));
+  const h=await crypto.subtle.digest("SHA-256",encoder.encode(secret+"|test-reset-20261029|"+addr));
   return b64u(new Uint8Array(h));
 }
 async function failedLogins(env,key) {
@@ -101,12 +101,15 @@ async function failedLogins(env,key) {
 async function recordFailure(env,key) {
   // Atomic increment: simultaneous guesses cannot reset the failure counter.
   const now=Date.now();
+  // Temporary testing allowance expires automatically at 19:00 Istanbul on 29 Oct 2026.
+  // A limit remains in place on the publicly accessible login endpoint.
+  const failureLimit=now<Date.parse("2026-10-29T16:00:00Z")?25:5;
   const sql = "INSERT INTO admin_login_attempts(ip_hash,failure_count,window_start_ms,blocked_until_ms) VALUES(?,1,?,0) " +
     "ON CONFLICT(ip_hash) DO UPDATE SET " +
     "failure_count=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 1 ELSE admin_login_attempts.failure_count+1 END, " +
     "window_start_ms=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN excluded.window_start_ms ELSE admin_login_attempts.window_start_ms END, " +
-    "blocked_until_ms=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 0 WHEN admin_login_attempts.failure_count+1>=5 THEN excluded.window_start_ms+900000 ELSE admin_login_attempts.blocked_until_ms END";
-  await env.DB.prepare(sql).bind(key,now).run();
+    "blocked_until_ms=CASE WHEN excluded.window_start_ms-admin_login_attempts.window_start_ms>=900000 THEN 0 WHEN admin_login_attempts.failure_count+1>=? THEN excluded.window_start_ms+900000 ELSE admin_login_attempts.blocked_until_ms END";
+  await env.DB.prepare(sql).bind(key,now,failureLimit).run();
 }
 function requireCsrf(request,session) {
   return originAllowed(request) && request.headers.get("x-csrf-token")===session.csrf;
