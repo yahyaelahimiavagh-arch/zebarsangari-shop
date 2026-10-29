@@ -1,6 +1,6 @@
 # Zebar Sangari Shop | فروشگاه زبرسنگری
 
-A luxury, mobile-first **Persian RTL** storefront concept for women's, men's, and children's underwear, socks, and accessories, styled from the shop's supplied brand image. Prepared as a **Cloudflare Workers static-assets preview**.
+A luxury, mobile-first **Persian RTL** storefront concept for women's, men's, and children's underwear, socks, and accessories, styled from the shop's supplied brand image. Prepared as a **Cloudflare Workers storefront preview**, with a read-only API script and static assets.
 
 > **IMPORTANT — DESIGN PROTOTYPE, NOT A LIVE E-COMMERCE SHOP**
 >
@@ -33,7 +33,7 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-Worker name is `zebarsangari-shop`; actual `workers.dev` URL depends on your Cloudflare account. Do not buy the `.com` before testing access from inside Iran. Do not enable real orders until the production backend and admin access control are built.
+Worker name is `zebarsangari-shop`; current test site is https://zebarsangari-shop.yahyaelahimiavagh.workers.dev/. The database binding is not yet configured; `/api/health` reports `catalogConfigured: false` until D1 is connected. Do not buy the `.com` before testing access from inside Iran. Do not enable real orders until the production backend and admin access control are built.
 
 ## Next milestone (production store)
 
