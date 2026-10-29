@@ -91,7 +91,7 @@ function done(){
   const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.textContent="کپی شماره بله";
   copy.onclick=()=>navigator.clipboard.writeText(phone).then(()=>message("شماره بله کپی شد.",true)).catch(()=>message("کپی شماره بله انجام نشد."));
   $("contactLinks").append(copy);
-  addLink("https://web.bale.ai/","باز کردن بله");
+  addLink("https://web.bale.ai/","ارسال رسید از بله");
   $("balePhoneHelp").classList.remove("hidden");
   $("balePhoneHelp").textContent="در بله با شماره "+phone+" مخاطب فروشگاه را پیدا کن و رسید را همراه با کد سفارش بفرست.";
  }
