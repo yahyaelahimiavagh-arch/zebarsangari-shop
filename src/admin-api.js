@@ -1,3 +1,4 @@
+import {handleAdminCheckout} from "./checkout.js";
 // Secure single-owner catalog administration for Cloudflare Workers.
 // Production activation requires ADMIN_PASSWORD and SESSION_SECRET (Worker secrets),
 // the D1 login-attempts migration, and an optional IMAGES KV namespace.
@@ -235,6 +236,10 @@ export async function handleAdmin(request,env) {
   if(path==="/api/admin/products" && method==="GET") {
     const offset=int(new URL(request.url).searchParams.get("offset")||"0",0,100000);
     return listProducts(env,offset===null?0:offset);
+  }
+  if(path==="/api/admin/orders" || path.startsWith("/api/admin/orders/") || path==="/api/admin/shop-settings"){
+    if(method!=="GET" && !requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
+    return handleAdminCheckout(request,env);
   }
   if(!requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
   if(path==="/api/admin/logout" && method==="POST")
