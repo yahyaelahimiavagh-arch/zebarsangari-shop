@@ -1,0 +1,20 @@
+{
+  // Staging example only. Set the real namespace ID before deployment.
+  "name": "zebarsangari-shop",
+  "compatibility_date": "2026-10-29",
+  "main": "./src/index.js",
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/media/*", "/admin.html"]
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "zebarsangari-db",
+    "database_id": "462a80f6-4b91-4a6d-8205-7f46b7872fd0"
+  }],
+  "kv_namespaces": [{
+    "binding": "IMAGES",
+    "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+  }]
+}

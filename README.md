@@ -4,12 +4,13 @@ A luxury, mobile-first **Persian RTL** storefront concept for women's, men's, an
 
 > **IMPORTANT — DESIGN PROTOTYPE, NOT A LIVE E-COMMERCE SHOP**
 >
-> All 8 initial products, all prices, and artwork are placeholders. The "admin" at `/admin.html` writes into **this browser's localStorage only**. Updates do NOT sync to other browsers or customers, and there is NO admin authentication. The checkout button is deliberately disabled; no orders or payments are processed. Do not advertise or deploy the admin page as a production service.
+> The initial mock catalog and old `/admin.html` localStorage demo are superseded in the secure-admin branch. The storefront reads live product data from D1, and `/manage.html` contains an authenticated catalog editor. Payment and customer orders are **not** implemented. This remains a pre-launch test version, and must pass the checklist in `docs/SMOKE-TEST-FA.md` before real products are added.
 
 ## Contents
 
-- `site/index.html` — single-file, responsive RTL storefront preview with embedded assets, CSS and JavaScript.
-- `site/admin.html` — demo catalog editor. Data is saved to this browser only.
+- `site/index.html` — Persian RTL storefront using the live `/api/products` catalog. When D1 is empty, no demo products appear.
+- `site/manage.html` — protected catalog editing interface (requires Cloudflare Secrets, D1 and KV); `/admin.html` redirects here.
+- `site/admin.html` — retained legacy demo file, not the active admin interface.
 - `wrangler.jsonc` — Cloudflare Workers static asset configuration.
 
 **This GitHub snapshot is the self-contained preview build.** The modular original sources, branding image and illustrations are available in the project's downloadable v1 ZIP.
@@ -33,7 +34,7 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-Worker name is `zebarsangari-shop`; current test site is https://zebarsangari-shop.yahyaelahimiavagh.workers.dev/. The database binding is not yet configured; `/api/health` reports `catalogConfigured: false` until D1 is connected. Do not buy the `.com` before testing access from inside Iran. Do not enable real orders until the production backend and admin access control are built.
+Worker name is `zebarsangari-shop`; current test site is https://zebarsangari-shop.yahyaelahimiavagh.workers.dev/. The D1 binding is configured and the user has confirmed `/api/health` returned `catalogConfigured: true`. Do not buy the `.com` before testing access from inside Iran. Do not enable real orders or payments; only catalog editing is present. See `docs/SMOKE-TEST-FA.md`.
 
 ## Next milestone (production store)
 
