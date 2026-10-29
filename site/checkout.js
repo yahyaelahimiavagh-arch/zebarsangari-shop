@@ -184,12 +184,13 @@ function addMessenger(label,url,iconText){
 }
 function renderComplete(){
  $("orderCode").textContent=order.code;
+ $("completeAmount").textContent="جمع کالاها: "+money(order.subtotalToman)+" — هزینه ارسال پس از هماهنگی مشخص می‌شود.";
  if(settings.cardNumber){
   $("paymentCard").hidden=false;$("noCard").hidden=true;
   $("cardNumber").textContent=window.ZebarBank?.format(settings.cardNumber)||settings.cardNumber;
   $("cardHolder").textContent=settings.cardHolder?"به نام "+settings.cardHolder:"";
   const b=window.ZebarBank?.identify(settings.cardNumber);
-  $("bankName").textContent=b?"بانک "+b.name.replace(/^بانک\s*/,""):"";
+  $("bankName").textContent=b?b.name:"";
  }else{$("paymentCard").hidden=true;$("noCard").hidden=false;}
  $("messengerLinks").replaceChildren();
  if(settings.whatsapp)addMessenger("ارسال رسید از واتساپ","https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summaryMessage()),"و");
