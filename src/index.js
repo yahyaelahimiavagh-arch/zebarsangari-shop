@@ -56,6 +56,16 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/media/")) return serveMedia(request,env);
     if (url.pathname === "/admin.html") return Response.redirect(new URL("/manage.html",request.url),302);
+    if (url.pathname === "/manage.html") {
+      const asset=await env.ASSETS.fetch(request);
+      const headers=new Headers(asset.headers);
+      headers.set("cache-control","no-store");
+      headers.set("x-frame-options","DENY");
+      headers.set("x-content-type-options","nosniff");
+      headers.set("referrer-policy","no-referrer");
+      headers.set('content-security-policy',"default-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'");
+      return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+    }
     if (url.pathname.startsWith("/api/admin/")) return handleAdmin(request,env);
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
