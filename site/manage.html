@@ -40,6 +40,25 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <div class="buttons"><button type="submit">ورود به پنل</button></div></form>
 </section>
 <div id="workspace" class="hidden">
+
+<section class="panel">
+<h2>اطلاعات تماس، پیام‌رسان‌ها و شماره کارت</h2>
+<p class="muted">این اطلاعات در دیتابیس ذخیره می‌شود؛ شماره کارت و راه‌های تماس برای خریداران قابل مشاهده هستند. رمز مدیریت را اینجا وارد نکن.</p>
+<form id="settingsForm">
+<div class="grid">
+<label class="field">شماره واتساپ با کد کشور (بدون +؛ مثلاً 98912...)<input id="shopWhatsapp" inputmode="tel" dir="ltr" placeholder="98912..."></label>
+<label class="field">نام کاربری تلگرام (بدون @)<input id="shopTelegram" dir="ltr" placeholder="username"></label>
+<label class="field">شماره تماس فروشگاه<input id="shopPhone" inputmode="tel" dir="ltr"></label>
+<label class="field">شماره کارت ۱۶ رقمی<input id="shopCardNumber" inputmode="numeric" dir="ltr" maxlength="24"></label>
+<label class="field wide">نام صاحب کارت<input id="shopCardHolder" maxlength="100"></label>
+<label class="field wide" style="flex-direction:row;gap:10px;align-items:center">
+<input type="checkbox" style="width:auto" id="shopOrdersEnabled">
+فعال کردن دریافت سفارش دستی (پس از تست؛ هیچ پرداختی خودکار تأیید نمی‌شود)
+</label>
+</div>
+<div class="buttons"><button type="submit" id="saveSettings">ذخیره تنظیمات فروشگاه</button></div>
+</form>
+</section>
 <section class="panel">
 <h1 id="editorTitle">افزودن محصول جدید</h1>
 <form id="productForm">
@@ -78,6 +97,15 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 </div>
 <div id="catalog"></div>
 <div class="buttons"><button type="button" class="secondary" id="more">نمایش محصولات بیشتر</button></div>
+</section>
+
+<section class="panel">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<h2>سفارش‌های دریافتی</h2><button type="button" class="secondary" id="reloadOrders">بروزرسانی سفارش‌ها</button>
+</div>
+<p class="muted">رسید بانکی فقط نشانه ارسال ادعای پرداخت است؛ برای تغییر وضعیت به «تأیید شده» حتماً واریز را در حساب بانکی بررسی کن.</p>
+<div id="ordersList"></div>
+<div id="orderDetails" class="hidden" style="margin-top:15px;border-top:1px solid #e9dad6;padding-top:15px"></div>
 </section>
 </div>
 </main>
@@ -204,13 +232,93 @@ async function optimize(file) {
  }
  throw Error("حجم تصویر زیاد است؛ عکس کوچک‌تری انتخاب کن.");
 }
+
+async function loadShopSettings(){
+ const data=await api("/api/admin/shop-settings");
+ $("shopWhatsapp").value=data.whatsapp||"";
+ $("shopTelegram").value=data.telegram||"";
+ $("shopPhone").value=data.phone||"";
+ $("shopCardNumber").value=data.cardNumber||"";
+ $("shopCardHolder").value=data.cardHolder||"";
+ $("shopOrdersEnabled").checked=Boolean(data.ordersEnabled);
+}
+$("settingsForm").onsubmit=async e=>{
+ e.preventDefault();$("saveSettings").disabled=true;
+ try {
+  await api("/api/admin/shop-settings",{method:"PUT",json:{
+   whatsapp:$("shopWhatsapp").value,telegram:$("shopTelegram").value,phone:$("shopPhone").value,
+   cardNumber:$("shopCardNumber").value,cardHolder:$("shopCardHolder").value,
+   ordersEnabled:$("shopOrdersEnabled").checked
+  }});
+  msg("اطلاعات فروشگاه ذخیره شد.",true);
+ }catch(error){msg("ذخیره تنظیمات ناموفق بود: "+error.message)}
+ finally{$("saveSettings").disabled=false}
+};
+const statuses={pending:"در انتظار بررسی",receipt_submitted:"رسید دریافت شده",confirmed:"پرداخت تأییدشده",shipped:"ارسال‌شده",cancelled:"لغوشده"};
+async function loadOrders(){
+ const data=await api("/api/admin/orders");
+ const list=$("ordersList");list.replaceChildren();
+ if(!data.orders?.length){const empty=document.createElement("p");empty.textContent="هنوز سفارشی ثبت نشده است.";empty.className="muted";list.append(empty);return}
+ for(const o of data.orders){
+  const card=document.createElement("div");card.style.cssText="padding:14px;margin-bottom:12px;border:1px solid #e9dad6;border-radius:13px";
+  const title=document.createElement("strong");title.textContent=o.code+" — "+o.buyer_name;
+  const sub=document.createElement("p");sub.className="muted";sub.textContent="وضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman)+" | "+(o.hasReceipt?"دارای رسید":"بدون رسید");
+  const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="جزئیات و مدیریت";
+  btn.onclick=()=>showOrder(o.id);
+  card.append(title,sub,btn);list.append(card);
+ }
+}
+async function showOrder(id){
+ try{
+  const data=await api("/api/admin/orders/"+id);
+  const o=data.order;
+  const box=$("orderDetails");box.classList.remove("hidden");box.replaceChildren();
+  const heading=document.createElement("h3");heading.textContent="سفارش "+o.code;box.append(heading);
+  const info=document.createElement("p");info.style.whiteSpace="pre-line";
+  info.textContent="نام: "+o.buyer_name+"\nتلفن: "+o.buyer_phone+"\nشهر: "+o.city+"\nآدرس: "+o.delivery_address+"\nروش: "+o.contact_channel+"\nمبلغ کالاها: "+fa(o.subtotal_toman);
+  box.append(info);
+  for(const p of data.lines||[]){
+   const line=document.createElement("p");line.className="muted";
+   line.textContent=p.product_title+" | "+p.size_label+" | "+p.color_label+" | تعداد: "+p.quantity+" | "+fa(p.line_total_toman);
+   box.append(line);
+  }
+  const select=document.createElement("select");
+  for(const [value,label] of Object.entries(statuses)){
+   const opt=document.createElement("option");opt.value=value;opt.textContent=label;select.append(opt);
+  }
+  select.value=o.status;
+  const save=document.createElement("button");save.type="button";save.textContent="ذخیره وضعیت";
+  save.onclick=async()=>{
+   if(select.value==="confirmed" && !confirm("واریز را مستقلاً در حساب بانکی بررسی کرده‌ای؟"))return;
+   try{await api("/api/admin/orders/"+id+"/status",{method:"PATCH",json:{status:select.value}});msg("وضعیت سفارش ثبت شد.",true);await loadOrders();}
+   catch(e){msg(e.message)}
+  };
+  const row=document.createElement("div");row.className="buttons";row.append(select,save);box.append(row);
+  const receiptBtn=document.createElement("button");receiptBtn.type="button";receiptBtn.className="secondary";
+  receiptBtn.textContent="مشاهده رسید خصوصی";
+  receiptBtn.onclick=async()=>{
+   try{
+    const res=await fetch("/api/admin/orders/"+id+"/receipt",{credentials:"same-origin",cache:"no-store"});
+    if(!res.ok)throw Error("رسیدی یافت نشد یا هنوز همگام‌سازی نشده است.");
+    const blob=await res.blob(),object=URL.createObjectURL(blob);
+    const img=document.createElement("img");img.alt="رسید سفارش";img.style.cssText="width:100%;max-width:440px;margin-top:15px;border-radius:10px";
+    img.onload=()=>setTimeout(()=>URL.revokeObjectURL(object),90000);
+    img.src=object;box.append(img);
+   }catch(e){msg(e.message)}
+  };
+  box.append(receiptBtn);box.scrollIntoView({behavior:"smooth"});
+ }catch(e){msg("خطا در خواندن سفارش: "+e.message)}
+}
+$("reloadOrders").onclick=()=>loadOrders().catch(e=>msg(e.message));
+async function loadCommerce(){await Promise.all([loadShopSettings(),loadOrders()])}
+
 $("loginForm").onsubmit=async(e)=>{
  e.preventDefault();clearMsg();
  try {
   const data=await api("/api/admin/login",{method:"POST",json:{password:$("password").value}});
   $("password").value="";csrf=data.csrf||"";
   const me=await api("/api/admin/me");csrf=me.csrf;
-  showWorkspace();resetForm();await loadProducts();msg("ورود انجام شد.",true);
+  showWorkspace();resetForm();await loadProducts();try{await loadCommerce()}catch(err){msg("بخش سفارش‌ها هنوز آماده نیست: "+err.message)}msg("ورود انجام شد.",true);
  }catch(error){msg("ورود ناموفق: "+error.message);}
 };
 $("logout").onclick=async()=>{try{await api("/api/admin/logout",{method:"POST"});}finally{showLogin();msg("از پنل خارج شدی.",true);}};
@@ -242,7 +350,7 @@ $("uploadPhoto").onclick=async()=>{
  finally{$("uploadPhoto").disabled=false;}
 };
 (async()=>{
- try{const data=await api("/api/admin/me");csrf=data.csrf;showWorkspace();resetForm();await loadProducts();}
+ try{const data=await api("/api/admin/me");csrf=data.csrf;showWorkspace();resetForm();await loadProducts();try{await loadCommerce()}catch(err){msg("بخش سفارش‌ها هنوز آماده نیست: "+err.message)}}
  catch{showLogin();}
 })();
 })();
