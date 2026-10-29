@@ -31,13 +31,13 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 </style></head>
 <body><header><strong>زبرسنگری</strong><a href="/">بازگشت به فروشگاه ←</a></header>
 <main><h1>ثبت درخواست سفارش</h1>
-<p class="muted">پرداخت آنلاین خودکار فعال نیست. بعد از ثبت سفارش، مبلغ نهایی شامل هزینه احتمالی ارسال را با فروشنده هماهنگ کن. عکس رسید به‌تنهایی تأیید پرداخت نیست.</p>
+<p class="muted">پرداخت و تأیید سفارش به‌صورت دستی انجام می‌شود.</p>
 <div id="message" class="hidden" role="status" aria-live="polite"></div>
 <div id="notReady" class="notice">در حال بررسی روش‌های سفارش...</div>
 <div id="checkoutArea" class="cards hidden">
 <section class="panel"><h2>سبد خرید شما</h2><div id="lineItems"></div>
 <div class="total"><span>جمع کالاها</span><span id="total" class="money">۰ تومان</span></div>
-<p class="muted">هزینه ارسال در این مبلغ نیست و باید با فروشگاه تأیید شود. موجودی هنگام تأیید دستی دوباره بررسی می‌شود.</p></section>
+<p class="muted">هزینه ارسال جداگانه محاسبه می‌شود.</p></section>
 <section class="panel"><h2>مشخصات دریافت‌کننده</h2>
 <form id="orderForm">
 <label class="field"><span>نام و نام خانوادگی</span><input id="buyerName" required maxlength="90" minlength="3" autocomplete="name"></label>
@@ -52,22 +52,22 @@ button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.hidden{display:
 <p id="checkoutCardBank" style="text-align:center;color:#986f7c"></p>
 <button type="button" class="secondary" id="checkoutCopyCard">کپی شماره کارت</button>
 </div>
-<div class="notice">پس از ثبت سفارش، کد سفارش را همراه با تصویر رسید از طریق پیام‌رسان برای فروشگاه ارسال کن.</div>
+<div class="notice">پس از ثبت، کد سفارش را همراه رسید بفرست.</div>
 <label style="display:flex;align-items:start;gap:8px;font-size:13px;line-height:1.9;margin:18px 0">
 <input id="consent" type="checkbox" required style="width:auto;margin-top:5px">
-<span>می‌پذیرم که نام، شماره تماس و آدرس من برای پیگیری و ارسال سفارش نزد فروشگاه ذخیره شود و پرداخت به تأیید دستی نیاز دارد.</span></label>
+<span>با ذخیره اطلاعات تماس و آدرس برای ارسال سفارش موافقم.</span></label>
 <button id="place" class="full" type="submit">ثبت درخواست سفارش</button>
 </form></section></div>
 <section id="done" class="hidden">
 <h2>درخواست سفارش ثبت شد ♡</h2>
 <p>کد سفارش: <strong id="code" dir="ltr"></strong></p><p id="orderAmount"></p>
-<div class="notice">سفارش برای بررسی ثبت شد؛ مبلغ نهایی و هزینه ارسال باید با فروشگاه تأیید شوند.</div>
+<div class="notice">سفارش ثبت شد؛ تأیید پرداخت با فروشگاه است.</div>
 <div id="cardBlock" class="hidden">
 <h2>اطلاعات کارت فروشگاه</h2><div class="card-number" id="cardNum"></div><p id="cardOwner" style="text-align:center"></p><p id="cardBank" style="text-align:center;color:#986f7c;font-size:14px"></p>
 <button id="copyCard" class="secondary">کپی شماره کارت</button></div>
 <h2>ارسال رسید پرداخت</h2><div class="tools" id="contactLinks"></div>
 <button class="secondary" id="copySummary">کپی متن سفارش</button>
-<div class="notice">کد سفارش را در پیام بنویس و عکس رسید را داخل پیام‌رسان ضمیمه کن.</div>
+<div class="notice">عکس رسید و کد سفارش را در پیام‌رسان بفرست.</div>
 <p id="balePhoneHelp" class="muted hidden"></p>
-<p class="muted">رسید مستقیماً در پیام‌رسان برای فروشگاه ارسال می‌شود. این سایت فایل رسید ذخیره نمی‌کند.</p>
+<p class="muted">رسید در این سایت آپلود یا ذخیره نمی‌شود.</p>
 </section></main><script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script></body></html>
