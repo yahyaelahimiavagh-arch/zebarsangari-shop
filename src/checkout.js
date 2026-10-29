@@ -34,6 +34,14 @@ function validateSettings(data){
  if(phone && !/^\+?\d{7,15}$/.test(phone))throw Error("invalid_phone");
  if(telegram && !/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(telegram))throw Error("invalid_telegram_username");
  if(cardNumber && !/^\d{16}$/.test(cardNumber))throw Error("invalid_card_number");
+ if(cardNumber){
+  let sum=0;
+  for(let i=0;i<16;i++){
+   const digit=Number(cardNumber[i]),m=i%2===0?digit*2:digit;
+   sum+=m>9?m-9:m;
+  }
+  if(sum%10!==0)throw Error("card_checksum_invalid");
+ }
  if(Boolean(cardNumber)!==Boolean(cardHolder))throw Error("card_and_owner_required");
  const enabled=data.ordersEnabled===true;
  if(enabled && !(whatsapp||telegram||cardNumber))throw Error("configure_contact_first");
@@ -140,7 +148,7 @@ async function receiptUpload(request,env,orderId){
  if(data.length<100||data.length>600000)return json({error:"receipt_size_limit"},413);
  const mime=imageMime(data);
  if(!mime || request.headers.get("content-type")?.split(";")[0]!==mime)return json({error:"invalid_image_format"},400);
- const key="receipts/"+orderId;
+ const key="receipts/"+orderId+"/"+crypto.randomUUID()+".webp";
  await env.IMAGES.put(key,data,{metadata:{mime,kind:"private_receipt"}});
  try{
   const result=await env.DB.prepare("UPDATE manual_orders SET receipt_object_key=?,receipt_mime=?,receipt_uploaded_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'),status='receipt_submitted',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND receipt_object_key IS NULL AND status='pending'").bind(key,mime,orderId).run();
