@@ -1,4 +1,5 @@
 import {handleAdmin, serveMedia} from "./admin-api.js";
+import {handlePublicCheckout} from "./checkout.js";
 // Worker entry point: static storefront + read-only catalog API. No checkout/admin writes.
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -67,6 +68,7 @@ export default {
       return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
     }
     if (url.pathname.startsWith("/api/admin/")) return handleAdmin(request,env);
+    if (url.pathname === "/api/shop-settings" || url.pathname === "/api/orders" || /^\/api\/orders\/[a-f0-9-]{36}\/receipt$/.test(url.pathname)) return handlePublicCheckout(request,env);
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
     }
