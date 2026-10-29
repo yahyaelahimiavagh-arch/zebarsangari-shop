@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>مدیریت فروشگاه زبرسنگری</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;background:#fbf7f5;color:#28211f;--rose:#b97888;--ink:#292220;--bg:#fff;--line:#e9dad6}
+*{box-sizing:border-box}body{margin:0}header{background:#292220;color:#fff;padding:18px 4%;display:flex;gap:16px;align-items:center;justify-content:space-between}
+header strong{font-size:20px}header small{display:block;color:#edcdd6;margin-top:4px}button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;background:var(--ink);color:white}
+button.secondary{background:#fff;color:#302729;border:1px solid var(--line)}button.danger{background:#8c4040}
+button:disabled{opacity:.5;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(1.12)}
+main{margin:25px auto;max-width:1120px;padding:0 16px}.panel{border:1px solid var(--line);background:#fff;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 8px 30px #3b242009}
+h1,h2,h3{margin:0 0 14px}h1{font-size:24px}h2{font-size:20px}
+p{line-height:1.9}.muted{color:#847475;font-size:13px}.hidden{display:none!important}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #decfcc;border-radius:10px;background:#fff;outline-color:#b97888;color:#302729;min-width:0}
+textarea{resize:vertical;min-height:90px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:7px;font-size:14px}
+.field.wide{grid-column:1/-1}.buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+#notice{padding:10px 14px;border-radius:10px;margin:15px 0;display:none;background:#f8e3e4;color:#692a34}#notice.ok{background:#e3f2e9;color:#256444}
+#catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:13px}
+.product{border:1px solid var(--line);padding:15px;border-radius:13px;background:#fff}
+.product h3{font-size:16px;margin:0 0 8px}.pill{font-size:12px;background:#f9e8ed;color:#954758;border-radius:100px;padding:4px 8px}
+.thumb{width:66px;height:76px;object-fit:cover;border-radius:9px;background:#f5ecea}
+.product-top{display:flex;gap:12px}.product-top>div{flex:1}.variant{display:grid;grid-template-columns:1fr 1fr 100px auto;gap:8px;align-items:center;margin-bottom:8px}
+.variant button{padding:10px 11px;background:#915868}.photos{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0}.photo{position:relative}.photo img{height:90px;width:80px;object-fit:cover;border-radius:8px}.photo button{position:absolute;left:0;top:0;background:#8c4040;font-size:12px;padding:4px}
+footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
+@media(max-width:580px){header{padding:16px}h1{font-size:20px}.panel{padding:17px}.grid{grid-template-columns:1fr}.field.wide{grid-column:auto}.variant{grid-template-columns:1fr 1fr;}.variant button{width:100%}}
+</style>
+</head>
+<body>
+<header><div><strong>زبرسنگری</strong><small>مدیریت واقعی محصولات | D1</small></div><button class="secondary hidden" id="logout">خروج امن</button></header>
+<main>
+<div id="notice" role="status" aria-live="polite"></div>
+<section class="panel" id="loginBox">
+<h1>ورود مدیر فروشگاه</h1>
+<p class="muted">رمز مدیریت فقط در بخش Secrets کلادفلیر نگهداری می‌شود، نه در GitHub یا مرورگر.</p>
+<form id="loginForm"><div class="field"><label for="password">رمز مدیریت</label><input type="password" id="password" autocomplete="current-password" minlength="12" required></div>
+<div class="buttons"><button type="submit">ورود به پنل</button></div></form>
+</section>
+<div id="workspace" class="hidden">
+<section class="panel">
+<h1 id="editorTitle">افزودن محصول جدید</h1>
+<form id="productForm">
+<div class="grid">
+<label class="field">نام محصول<input id="title" maxlength="180" required placeholder="مثلاً ست نخی زنانه"></label>
+<label class="field">دسته‌بندی<select id="category">
+<option value="women">زنانه</option><option value="men">مردانه</option><option value="kids">بچگانه</option><option value="socks">جوراب</option><option value="accessories">اکسسوری</option>
+</select></label>
+<label class="field">قیمت (تومان)<input id="price" type="number" min="0" max="10000000000" required></label>
+<label class="field">قیمت قبل از تخفیف (اختیاری)<input id="comparePrice" type="number" min="0"></label>
+<label class="field wide">توضیحات<textarea id="description" maxlength="4000"></textarea></label>
+<label class="field wide" style="flex-direction:row;align-items:center">
+<input id="active" type="checkbox" style="width:auto" checked> نمایش محصول در فروشگاه
+</label>
+</div>
+<h2 style="margin-top:20px">سایز، رنگ و موجودی</h2>
+<div id="variants"></div>
+<div class="buttons"><button id="addVariant" type="button" class="secondary">+ افزودن سایز / رنگ</button></div>
+<div id="productPhotos" class="hidden">
+<h2 style="margin-top:25px">تصاویر محصول</h2>
+<div id="photoList" class="photos"></div>
+<label class="field">آپلود تصویر جدید (JPEG, PNG, WebP)
+<input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp"></label>
+<div class="buttons"><button type="button" id="uploadPhoto" class="secondary">آپلود عکس</button></div>
+<p class="muted">عکس‌ها قبل از ارسال در گوشی/مرورگر کوچک می‌شوند؛ ابتدا محصول را ذخیره کن.</p>
+</div>
+<div class="buttons">
+<button type="submit" id="saveProduct">ذخیره محصول</button>
+<button type="button" class="secondary" id="resetEditor">محصول جدید</button>
+</div>
+</form>
+</section>
+<section class="panel">
+<div style="display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+<h2>محصولات ثبت‌شده</h2><button type="button" class="secondary" id="reload">بروزرسانی</button>
+</div>
+<div id="catalog"></div>
+<div class="buttons"><button type="button" class="secondary" id="more">نمایش محصولات بیشتر</button></div>
+</section>
+</div>
+</main>
+<footer>فروشگاه زبرسنگری — پنل مدیریت امن، نسخه آزمایشی توسعه</footer>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+let csrf="", products=[], editId=null, offset=0;
+const msg=(text,good=false)=>{const n=$("notice");n.textContent=text;n.className=good?"ok":"";n.style.display="block";window.scrollTo({top:0,behavior:"smooth"});};
+const clearMsg=()=>{$("notice").style.display="none";};
+const fa=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
+async function api(path,opts={}) {
+ const headers={...opts.headers};
+ if(opts.json){headers["Content-Type"]="application/json";opts.body=JSON.stringify(opts.json);delete opts.json;}
+ if(opts.method && opts.method!=="GET") headers["X-CSRF-Token"]=csrf;
+ const response=await fetch(path,{credentials:"same-origin",...opts,headers});
+ let data;
+ try {data=await response.json();}catch{throw Error("پاسخ نامعتبر از سرور");}
+ if(!response.ok) throw Error(data.error||"خطای سرور ("+response.status+")");
+ return data;
+}
+function showWorkspace() {
+ $("loginBox").classList.add("hidden");$("workspace").classList.remove("hidden");$("logout").classList.remove("hidden");
+}
+function showLogin() {
+ csrf="";$("loginBox").classList.remove("hidden");$("workspace").classList.add("hidden");$("logout").classList.add("hidden");
+}
+function addVariant(size="",color="",stock=0) {
+ const row=document.createElement("div");row.className="variant";
+ for(const [kind,value,placeholder] of [["size",size,"سایز: M"],["color",color,"رنگ: مشکی"],["stock",stock,"موجودی"]]) {
+  const input=document.createElement("input");input.dataset.kind=kind;input.placeholder=placeholder;
+  input.value=value;input.required=true;
+  if(kind==="stock"){input.type="number";input.min="0";input.max="1000000";}else input.maxLength=kind==="size"?24:48;
+  row.append(input);
+ }
+ const b=document.createElement("button");b.type="button";b.textContent="×";b.title="حذف این تنوع";b.onclick=()=>row.remove();row.append(b);
+ $("variants").append(row);
+}
+function resetForm() {
+ editId=null;$("editorTitle").textContent="افزودن محصول جدید";$("productForm").reset();
+ $("active").checked=true;$("variants").replaceChildren();addVariant("فری‌سایز","پیش‌فرض",0);
+ $("productPhotos").classList.add("hidden");$("photoList").replaceChildren();
+}
+function readForm() {
+ const variants=[...$("variants").children].map(row=>Object.fromEntries([...row.querySelectorAll("input")].map(i=>[i.dataset.kind,i.dataset.kind==="stock"?Number(i.value):i.value.trim()])));
+ return {title:$("title").value.trim(),description:$("description").value.trim(),category:$("category").value,
+  priceToman:Number($("price").value),compareAtToman:$("comparePrice").value===""?null:Number($("comparePrice").value),
+  active:$("active").checked,variants};
+}
+async function loadProducts(append=false) {
+ if(!append){offset=0;products=[];}
+ const data=await api("/api/admin/products?offset="+offset);
+ offset+=data.products.length;
+ products.push(...data.products);
+ renderCatalog();
+ $("more").disabled=data.products.length<60;
+}
+function productCard(p) {
+ const card=document.createElement("article");card.className="product";
+ const top=document.createElement("div");top.className="product-top";
+ const photo=document.createElement("img");photo.className="thumb";photo.alt="تصویر محصول";
+ if(p.images[0]) photo.src=p.images[0].url;
+ const meta=document.createElement("div");
+ const heading=document.createElement("h3");heading.textContent=p.title;
+ const price=document.createElement("div");price.textContent=fa(p.priceToman);
+ const state=document.createElement("span");state.className="pill";state.textContent=p.active?"فعال":"غیرفعال";
+ const stock=document.createElement("p");stock.className="muted";stock.textContent="موجودی کل: "+p.variants.reduce((s,v)=>s+v.stock,0)+" | تنوع: "+p.variants.length;
+ meta.append(heading,price,state,stock);top.append(photo,meta);card.append(top);
+ const actions=document.createElement("div");actions.className="buttons";
+ const edit=document.createElement("button");edit.className="secondary";edit.textContent="ویرایش";
+ edit.onclick=()=>editProduct(p.id);
+ const archive=document.createElement("button");archive.className="danger";
+ archive.textContent="غیرفعال کردن";archive.disabled=!p.active;
+ archive.onclick=async()=>{if(!confirm("این محصول از فروشگاه پنهان شود؟"))return;try{await api("/api/admin/products/"+p.id,{method:"DELETE"});msg("محصول غیرفعال شد.",true);await loadProducts();}catch(e){msg(e.message);}};
+ actions.append(edit,archive);card.append(actions);
+ return card;
+}
+function renderCatalog() {
+ $("catalog").replaceChildren(...products.map(productCard));
+ if(!products.length){const p=document.createElement("p");p.textContent="هنوز محصولی ثبت نشده است.";p.className="muted";$("catalog").append(p);}
+}
+function renderPhotos(p) {
+ $("productPhotos").classList.remove("hidden");
+ $("photoList").replaceChildren();
+ for(const image of p.images) {
+  const wrap=document.createElement("span");wrap.className="photo";
+  const img=document.createElement("img");img.src=image.url;img.alt="عکس محصول";
+  const b=document.createElement("button");b.type="button";b.textContent="×";b.title="حذف تصویر";
+  b.onclick=async()=>{if(!confirm("تصویر حذف شود؟"))return;try{await api("/api/admin/images/"+image.id,{method:"DELETE"});await loadProducts();const current=products.find(x=>x.id===editId);if(current)renderPhotos(current);}catch(e){msg(e.message);}};
+  wrap.append(img,b);$("photoList").append(wrap);
+ }
+}
+function editProduct(id) {
+ const p=products.find(x=>x.id===id);if(!p)return;
+ editId=id;$("editorTitle").textContent="ویرایش محصول";
+ $("title").value=p.title;$("description").value=p.description;$("category").value=p.category;
+ $("price").value=p.priceToman;$("comparePrice").value=p.compareAtToman??"";$("active").checked=p.active;
+ $("variants").replaceChildren();
+ for(const v of p.variants)addVariant(v.size,v.color,v.stock);
+ renderPhotos(p);$("editorTitle").scrollIntoView({behavior:"smooth"});
+}
+async function optimize(file) {
+ const bitmap=await createImageBitmap(file);
+ const maxSide=1080,scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+ const canvas=document.createElement("canvas");canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+ canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+ for(const quality of [.78,.64,.5,.36]) {
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
+  if(blob && blob.size<620000) return blob;
+ }
+ throw Error("حجم تصویر زیاد است؛ عکس کوچک‌تری انتخاب کن.");
+}
+$("loginForm").onsubmit=async(e)=>{
+ e.preventDefault();clearMsg();
+ try {
+  const data=await api("/api/admin/login",{method:"POST",json:{password:$("password").value}});
+  $("password").value="";csrf=data.csrf||"";
+  const me=await api("/api/admin/me");csrf=me.csrf;
+  showWorkspace();resetForm();await loadProducts();msg("ورود انجام شد.",true);
+ }catch(error){msg("ورود ناموفق: "+error.message);}
+};
+$("logout").onclick=async()=>{try{await api("/api/admin/logout",{method:"POST"});}finally{showLogin();msg("از پنل خارج شدی.",true);}};
+$("addVariant").onclick=()=>addVariant("","",0);
+$("resetEditor").onclick=resetForm;
+$("reload").onclick=async()=>{try{await loadProducts();msg("فهرست تازه شد.",true);}catch(e){msg(e.message);}};
+$("more").onclick=async()=>{try{await loadProducts(true);}catch(e){msg(e.message);}};
+$("productForm").onsubmit=async(e)=>{
+ e.preventDefault();clearMsg();$("saveProduct").disabled=true;
+ try{
+  const path=editId?"/api/admin/products/"+editId:"/api/admin/products";
+  const result=await api(path,{method:editId?"PUT":"POST",json:readForm()});
+  await loadProducts();
+  resetForm();const found=products.find(p=>p.id===result.id);if(found)editProduct(found.id);
+  msg("محصول با موفقیت در دیتابیس ذخیره شد.",true);
+ }catch(error){msg("ذخیره انجام نشد: "+error.message);}
+ finally{$("saveProduct").disabled=false;}
+};
+$("uploadPhoto").onclick=async()=>{
+ const file=$("photoFile").files?.[0];if(!editId||!file)return msg("ابتدا محصول را ذخیره و تصویر را انتخاب کن.");
+ $("uploadPhoto").disabled=true;
+ try{
+  const blob=await optimize(file);
+  await api("/api/admin/products/"+editId+"/images",{method:"POST",body:blob,headers:{"Content-Type":"image/webp"}});
+  $("photoFile").value="";await loadProducts();
+  const p=products.find(x=>x.id===editId);if(p)renderPhotos(p);
+  msg("عکس محصول ذخیره شد.",true);
+ }catch(e){msg("آپلود ناموفق: "+e.message);}
+ finally{$("uploadPhoto").disabled=false;}
+};
+(async()=>{
+ try{const data=await api("/api/admin/me");csrf=data.csrf;showWorkspace();resetForm();await loadProducts();}
+ catch{showLogin();}
+})();
+})();
+</script>
+</body>
+</html>
