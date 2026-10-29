@@ -1,0 +1,8 @@
+{
+  // Design-only static preview. No backend, payment or production admin.
+  "name": "zebarsangari-shop",
+  "compatibility_date": "2026-10-29",
+  "assets": {
+    "directory": "./site"
+  }
+}
