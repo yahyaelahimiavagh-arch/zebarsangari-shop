@@ -91,7 +91,9 @@ function validationInput(body){
   if(seen.has(variantId))throw Error("duplicate_variant");
   seen.add(variantId);items.push({productId,variantId,quantity});
  }
- return {buyer,phone,city,address,channel,items};
+ const expectedSubtotal=integer(body.expectedSubtotalToman,0,100000000000);
+ if(body.expectedSubtotalToman!==undefined && expectedSubtotal===null)throw Error("invalid_total");
+ return {buyer,phone,city,address,channel,items,expectedSubtotal};
 }
 async function createOrder(request,env){
  if(!env.DB||!env.SESSION_SECRET) return json({error:"not_configured"},503);
@@ -123,6 +125,8 @@ async function createOrder(request,env){
   if(!Number.isSafeInteger(subtotal)||subtotal>100000000000)return json({error:"invalid_total"},400);
   lines.push({row,qty:line.quantity,total,unit});
  }
+ // Prevent the customer from unknowingly submitting an order after a price change.
+ if(input.expectedSubtotal!==null && input.expectedSubtotal!==subtotal)return json({error:"price_changed"},409);
  const orderId=crypto.randomUUID(),code="ZS-"+new Date().toISOString().slice(0,10).replace(/-/g,"")+"-"+orderId.slice(0,8).toUpperCase();
  // Legacy schema still requires a token hash; no upload token is provided to customers.
  const tokenHash=await hash(randomToken());
