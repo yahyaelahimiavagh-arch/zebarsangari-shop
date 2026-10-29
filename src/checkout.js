@@ -165,15 +165,20 @@ async function adminOrders(request,env){
  if(path==="/api/admin/shop-settings" && method==="PUT"){
   let input,p;
   try{input=await bodyJson(request);p=validateSettings(input);}catch(e){return json({error:e.message||"invalid_settings"},400);}
-  await env.DB.prepare(
-   "UPDATE shop_settings SET whatsapp=?,telegram=?,phone=?,card_number=?,card_holder=?,orders_enabled=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=1"
-  ).bind(p.whatsapp,p.telegram,p.phone,p.cardNumber,p.cardHolder,p.enabled?1:0).run();
-  try{
-   await env.DB.prepare("INSERT INTO shop_bale_settings(id,bale_phone,bale_username) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET bale_phone=excluded.bale_phone,bale_username=excluded.bale_username,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')").bind(p.balePhone,p.baleUsername).run();
-  }catch(error){
+  let baleReady=true;
+  try{await env.DB.prepare("SELECT id FROM shop_bale_settings WHERE id=1").first();}
+  catch(error){
    if(!String(error?.message||error).includes("no such table"))throw error;
-   if(p.balePhone||p.baleUsername)return json({error:"bale_settings_migration_required"},503);
+   baleReady=false;
   }
+  if(!baleReady && (p.balePhone||p.baleUsername))return json({error:"bale_settings_migration_required"},503);
+  const mainUpdate=env.DB.prepare(
+   "UPDATE shop_settings SET whatsapp=?,telegram=?,phone=?,card_number=?,card_holder=?,orders_enabled=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=1"
+  ).bind(p.whatsapp,p.telegram,p.phone,p.cardNumber,p.cardHolder,p.enabled?1:0);
+  if(baleReady){
+   const baleUpdate=env.DB.prepare("INSERT INTO shop_bale_settings(id,bale_phone,bale_username) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET bale_phone=excluded.bale_phone,bale_username=excluded.bale_username,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')").bind(p.balePhone,p.baleUsername);
+   await env.DB.batch([mainUpdate,baleUpdate]);
+  }else await mainUpdate.run();
   return json({ok:true});
  }
  if(path==="/api/admin/orders" && method==="GET"){
