@@ -81,7 +81,7 @@ function validateProduct(input) {
   const price=int(input.priceToman,0,10000000000);
   const compare=input.compareAtToman===null || input.compareAtToman==="" || input.compareAtToman===undefined
     ? null : int(input.compareAtToman,0,10000000000);
-  if(!title||!(studioCategories?CATEGORY_ID.test(category):CATEGORIES.has(category))||price===null||(compare===null && input.compareAtToman!==null && input.compareAtToman!=="" && input.compareAtToman!==undefined))
+  if(!title||!CATEGORIES.has(category)||price===null||(compare===null && input.compareAtToman!==null && input.compareAtToman!=="" && input.compareAtToman!==undefined))
     throw new Error("invalid_product");
   if(!Array.isArray(input.variants)||input.variants.length<1||input.variants.length>30) throw new Error("invalid_variants");
   const seen=new Set(),variants=[];
