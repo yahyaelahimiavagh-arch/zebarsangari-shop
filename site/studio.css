@@ -16,3 +16,35 @@ input:not([type=checkbox]),select{display:block;width:100%;border:1px solid #e0d
 hr{border:0;border-top:1px solid #eee5e6;margin:24px 0}.disabled{opacity:.5}
 @media(max-width:900px){.columns,.products-columns{grid-template-columns:1fr}.sticky-card{position:static}.header-links{gap:1px}.app{padding:22px 16px 70px}}
 @media(max-width:600px){.topbar{padding:12px 15px;align-items:flex-start}.brand{font-size:17px}.brand-icon{width:36px;height:36px}.header-links{max-width:175px;justify-content:flex-end}.header-links a{font-size:10px;padding:6px}.app{padding:18px 12px 65px}.welcome{align-items:start}.welcome h1{font-size:21px}.status{display:none}.summary-row{gap:6px}.stat{padding:12px;border-radius:10px}.stat span{font-size:10px}.stat b{font-size:22px}.tab{font-size:11px;padding:8px 10px}.tab.extra{margin-right:0}.section-title{align-items:flex-start}.section-title h2{font-size:18px}.card{padding:14px}.card-heading{align-items:start;flex-direction:column}.sort-row{padding:8px;gap:6px}.tiny{min-width:27px;height:30px}.row-title{font-size:12px}.row-meta{font-size:10px}.login-box{margin-top:25px;padding:29px 19px}.row-between{flex-direction:column;align-items:stretch}.row-between input{max-width:none}}
+
+/* Store Studio v2 — integrated product editor */
+.editor-columns{grid-template-columns:minmax(0,1.4fr) minmax(285px,.7fr);align-items:start}
+.editor-columns textarea{display:block;width:100%;min-height:100px;border:1px solid #e0d6d9;border-radius:9px;padding:10px 12px;margin:7px 0 15px;background:#fff;color:#30282b;resize:vertical;line-height:1.9;outline-color:#bd8c9b}
+.form-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.tick-grid{gap:10px;margin:5px 0 18px}
+.editor-columns .tick-grid .featured{margin:0;align-items:center}
+.required{color:#a4405b}
+.editor-heading{margin:22px 0 0}
+.editor-heading-line{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 10px}
+.editor-heading-line h3{margin:0}
+.editor-variants{display:grid;gap:9px;margin:0 0 13px}
+.editor-variant{display:grid;grid-template-columns:minmax(65px,1fr) minmax(65px,1fr) minmax(80px,.85fr) 34px;gap:8px;align-items:end;padding:11px;border-radius:10px;background:#faf6f6;border:1px solid #eee3e6}
+.editor-variant label{margin:0;font-size:11px}
+.editor-variant input{margin-top:3px;min-height:39px;padding:8px}
+.editor-actions{margin:25px 0 0}
+.editor-actions button{min-width:150px}
+.editor-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:15px 0}
+.editor-photo{border:1px solid #e7dadf;border-radius:10px;padding:7px;min-width:0;position:relative;background:#fff}
+.editor-photo img{width:100%;height:145px;object-fit:cover;border-radius:7px;background:#f6eeee}
+.editor-photo .photo-actions{display:flex;justify-content:space-between;gap:4px;margin-top:8px}
+.editor-photo .photo-actions button{flex:1}
+.editor-photo strong{display:block;color:#87546a;font-size:11px;line-height:1.9;text-align:center}
+.editor-columns #imageUploadBlock{border-top:1px solid #eee5e6;padding-top:15px}
+.editor-columns #imageUploadBlock input[type=file]{padding:8px 6px;font-size:12px}
+.editor-columns #imageUploadBlock label{font-size:12px}
+.editor-columns .checkbox-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:230px;gap:6px}
+.editor-columns .checkbox-list label{min-width:0}
+.editor-columns .checkbox-list span{overflow-wrap:anywhere}
+.editor-columns input[aria-invalid=true],.editor-columns select[aria-invalid=true]{border-color:#bd5a65;background:#fff9fa}
+@media(max-width:980px){.editor-columns{grid-template-columns:1fr}}
+@media(max-width:640px){.form-two{grid-template-columns:1fr}.editor-variant{grid-template-columns:repeat(3,minmax(0,1fr)) 32px;padding:7px;gap:5px}.editor-variant label{font-size:10px}.editor-variant input{font-size:12px;padding:7px 5px}.editor-actions button{flex:1;min-width:0}.editor-photo img{height:120px}.editor-columns .checkbox-list{grid-template-columns:1fr 1fr}.tab[data-tab=editor]{background:#f7eef1}}
