@@ -195,8 +195,50 @@ async function adminOrders(request,env){
   return json({ok:true});
  }
  if(path==="/api/admin/orders" && method==="GET"){
-  const rows=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,created_at FROM manual_orders ORDER BY created_at DESC LIMIT 80").all();
-  return json({orders:rows.results||[]});
+  // Keyset pagination avoids losing historical orders beyond LIMIT 80.
+  const params=new URL(request.url).searchParams;
+  const limit=integer(params.get("limit")||"25",1,50);
+  if(limit===null)return json({error:"invalid_page_size"},400);
+  const status=params.get("status")||"";
+  if(status&&!["pending","receipt_submitted","confirmed","shipped","cancelled"].includes(status))
+   return json({error:"invalid_status"},400);
+  const search=norm((params.get("q")||"").trim());
+  // D1 LIKE patterns have a 50-byte limit. Bound and escape the user string.
+  if(new TextEncoder().encode(search).length>22)return json({error:"search_too_long"},400);
+  let cursor=null;
+  if(params.has("cursor")){
+   const raw=params.get("cursor")||"";
+   if(!/^[a-zA-Z0-9_-]{1,180}$/.test(raw))return json({error:"invalid_cursor"},400);
+   try{
+    const parsed=JSON.parse(atob(raw.replace(/-/g,"+").replace(/_/g,"/")));
+    if(!Array.isArray(parsed)||parsed.length!==2||
+       typeof parsed[0]!=="string"||!/^[0-9T:Z.+\- ]{10,40}$/.test(parsed[0])||
+       typeof parsed[1]!=="string"||!/^[a-f0-9-]{36}$/.test(parsed[1]))
+     return json({error:"invalid_cursor"},400);
+    cursor=parsed;
+   }catch{return json({error:"invalid_cursor"},400);}
+  }
+  const conditions=[],values=[];
+  if(status){conditions.push("status=?");values.push(status);}
+  if(search){
+   const pattern="%"+search.replace(/[!%_]/g,"!$&")+"%";
+   conditions.push("(code LIKE ? ESCAPE '!' OR buyer_phone LIKE ? ESCAPE '!' OR buyer_name LIKE ? ESCAPE '!')");
+   values.push(pattern,pattern,pattern);
+  }
+  if(cursor){
+   conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
+   values.push(cursor[0],cursor[0],cursor[1]);
+  }
+  const sql="SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,created_at "+
+   "FROM manual_orders "+(conditions.length?"WHERE "+conditions.join(" AND ")+" ":"")+
+   "ORDER BY created_at DESC,id DESC LIMIT ?";
+  const result=await env.DB.prepare(sql).bind(...values,limit+1).all();
+  const all=result.results||[],orders=all.slice(0,limit);
+  const last=orders[orders.length-1];
+  const nextCursor=all.length>limit&&last
+   ?btoa(JSON.stringify([last.created_at,last.id])).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"")
+   :null;
+  return json({orders,nextCursor,hasMore:Boolean(nextCursor)});
  }
  const m=path.match(/^\/api\/admin\/orders\/([a-f0-9-]{36})(?:\/(status))?$/);
  if(!m)return json({error:"not_found"},404);
