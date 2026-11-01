@@ -25,7 +25,7 @@ function makeDb(orders){
     const limit=values.at(-1);
     let next=orders.slice();
     let offset=0;
-    if(sql.includes("status=?"))next=next.filter(o=>o.status===values[offset++]);
+    if(sql.includes("status=?")){const filterStatus=values[offset++];next=next.filter(o=>o.status===filterStatus);}
     if(sql.includes("instr(lower(code)")){
      const v=values[offset];
      offset+=3;
