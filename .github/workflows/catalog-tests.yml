@@ -28,4 +28,4 @@ jobs:
       - name: Backup tooling dry-run (no credentials)
         run: node scripts/backup-cloudflare.mjs --dry-run
       - name: Test catalog query boundaries
-        run: node --test tests/catalog.test.mjs
+        run: node --test tests/catalog.test.mjs tests/admin-orders.test.mjs
