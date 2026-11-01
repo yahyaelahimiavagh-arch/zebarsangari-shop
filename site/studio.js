@@ -271,12 +271,12 @@ $("loginForm").onsubmit=async e=>{
  try{
   await api("/api/admin/login",{method:"POST",json:{password:$("password").value}});
   $("password").value="";const me=await api("/api/admin/me");csrf=me.csrf;
-  await loadAll();showWorkspace();note("ورود با موفقیت انجام شد.");
+  showWorkspace();try{await loadAll();$("setupWarning").hidden=true;note("ورود با موفقیت انجام شد.");}catch(err){$("setupWarning").hidden=err.code!=="migration_required";note(err.message,true);}
  }catch(err){note(err.message,true);}finally{btn.disabled=false;}
 };
 $("logout").onclick=async()=>{try{await api("/api/admin/logout",{method:"POST"});}catch{}showLogin();};
 (async()=>{
- try{const me=await api("/api/admin/me");csrf=me.csrf;await loadAll();showWorkspace();}
- catch(error){showLogin();if(error.code==="migration_required")note(error.message,true);}
+ try{const me=await api("/api/admin/me");csrf=me.csrf;showWorkspace();try{await loadAll();$("setupWarning").hidden=true;}catch(err){$("setupWarning").hidden=err.code!=="migration_required";note(err.message,true);}}
+ catch(error){showLogin();}
 })();
 })();
