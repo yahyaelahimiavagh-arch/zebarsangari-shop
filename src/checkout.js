@@ -203,8 +203,8 @@ async function adminOrders(request,env){
   if(status&&!["pending","receipt_submitted","confirmed","shipped","cancelled"].includes(status))
    return json({error:"invalid_status"},400);
   const search=norm((params.get("q")||"").trim());
-  // D1 LIKE patterns have a 50-byte limit. Bound and escape the user string.
-  if(new TextEncoder().encode(search).length>22)return json({error:"search_too_long"},400);
+  // Bound the search size; instr() avoids SQLite's 50-byte LIKE-pattern limit.
+  if(new TextEncoder().encode(search).length>80)return json({error:"search_too_long"},400);
   let cursor=null;
   if(params.has("cursor")){
    const raw=params.get("cursor")||"";
@@ -221,9 +221,8 @@ async function adminOrders(request,env){
   const conditions=[],values=[];
   if(status){conditions.push("status=?");values.push(status);}
   if(search){
-   const pattern="%"+search.replace(/[!%_]/g,"!$&")+"%";
-   conditions.push("(code LIKE ? ESCAPE '!' OR buyer_phone LIKE ? ESCAPE '!' OR buyer_name LIKE ? ESCAPE '!')");
-   values.push(pattern,pattern,pattern);
+   conditions.push("(instr(lower(code),lower(?))>0 OR instr(buyer_phone,?)>0 OR instr(buyer_name,?)>0)");
+   values.push(search,search,search);
   }
   if(cursor){
    conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
