@@ -33,13 +33,25 @@ async function catalog(env, category){
   }
   const products=q.results||[];
   if(!products.length)return response({products:[],count:0});
-  const ids=products.map(p=>p.id),slots=ids.map(()=>"?").join(",");
-  const requests=[
-    env.DB.prepare("SELECT id,product_id,sku,size_label,color_label,stock FROM product_variants WHERE active=1 AND product_id IN ("+slots+") ORDER BY product_id,size_label,color_label").bind(...ids).all(),
-    env.DB.prepare("SELECT id,product_id,object_key,alt_fa,position FROM product_images WHERE product_id IN ("+slots+") ORDER BY product_id,position").bind(...ids).all()
-  ];
-  if(enhanced)requests.push(env.DB.prepare("SELECT product_id,category_id FROM shop_product_categories WHERE product_id IN ("+slots+")").bind(...ids).all());
-  const rows=await Promise.all(requests);
+  // D1 permits at most 100 SQL bound parameters per query. Query related
+  // rows in bounded chunks rather than sending 101-150 product IDs at once.
+  // This preserves the legacy 150-product response until cursor pagination lands.
+  const ids=products.map(p=>p.id);
+  const rows=[{results:[]},{results:[]},{results:[]}];
+  const CATALOG_BIND_CHUNK=75; // headroom for any future additional bound arguments
+  for(let start=0;start<ids.length;start+=CATALOG_BIND_CHUNK){
+    const chunk=ids.slice(start,start+CATALOG_BIND_CHUNK);
+    const slots=chunk.map(()=>"?").join(",");
+    const queries=[
+      env.DB.prepare("SELECT id,product_id,sku,size_label,color_label,stock FROM product_variants WHERE active=1 AND product_id IN ("+slots+") ORDER BY product_id,size_label,color_label").bind(...chunk).all(),
+      env.DB.prepare("SELECT id,product_id,object_key,alt_fa,position FROM product_images WHERE product_id IN ("+slots+") ORDER BY product_id,position").bind(...chunk).all()
+    ];
+    if(enhanced)queries.push(env.DB.prepare("SELECT product_id,category_id FROM shop_product_categories WHERE product_id IN ("+slots+")").bind(...chunk).all());
+    const results=await Promise.all(queries);
+    for(let index=0;index<results.length;index++){
+      rows[index].results.push(...(results[index].results||[]));
+    }
+  }
   const variants=new Map(ids.map(id=>[id,[]])),images=new Map(ids.map(id=>[id,[]])),cats=new Map(ids.map(id=>[id,[]]));
   for(const v of rows[0].results||[])variants.get(v.product_id)?.push({id:v.id,sku:v.sku,size:v.size_label,color:v.color_label,stock:v.stock});
   for(const im of rows[1].results||[])images.get(im.product_id)?.push({id:im.id,key:im.object_key,alt:im.alt_fa,position:im.position});
