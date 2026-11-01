@@ -85,11 +85,12 @@ function renderProducts(){
   const info=document.createElement("div");info.className="product-info";
   const categoryTag=document.createElement("span");categoryTag.className="product-kind";categoryTag.textContent=label[category!=="all"?category:(p.categoryIds?.[0]||p.category)]||"محصول";
   const name=document.createElement("h3");name.textContent=p.title;
+  const ref=document.createElement("span");ref.className="product-code";ref.textContent="کد محصول: "+window.ZebarProductCode.fromId(p.id);ref.dir="ltr";
   const prices=document.createElement("div");prices.className="product-price";
   const price=document.createElement("span");price.textContent=toman(p.priceToman);prices.append(price);
   if(discounted(p)){const old=document.createElement("del");old.textContent=toman(p.compareAtToman);prices.append(old);}
   const variations=document.createElement("div");variations.className="product-colors";variations.textContent=fa(uniq(activeVariants(p).map(v=>v.size)).length)+" سایز · "+fa(uniq(activeVariants(p).map(v=>v.color)).length)+" رنگ";
-  info.append(categoryTag,name,prices,variations);card.append(pictureWrap,info);grid.append(card);
+  info.append(categoryTag,name,ref,prices,variations);card.append(pictureWrap,info);grid.append(card);
  }
 }
 function setCategory(value){
@@ -179,9 +180,10 @@ function renderModal(){
  const info=document.createElement("div");info.className="modal-details";
  const caption=document.createElement("small");caption.className="caption";caption.textContent=(label[p.category]||"محصول")+" / زبرسنگری";
  const title=document.createElement("h2");title.textContent=p.title;
+ const ref=document.createElement("div");ref.className="product-code";ref.textContent="کد محصول: "+window.ZebarProductCode.fromId(p.id);ref.dir="ltr";
  const price=document.createElement("div");price.className="modal-price";price.textContent=toman(p.priceToman);
  const desc=document.createElement("p");desc.className="text";desc.textContent=p.description||"";
- info.append(caption,title,price,desc);
+ info.append(caption,title,ref,price,desc);
  const variants=activeVariants(p);
  if(variants.length){
   const sizes=uniq(variants.map(v=>v.size));if(!sizes.includes(selSize))selSize=sizes[0];
@@ -223,7 +225,7 @@ function updateBasket(){
   const thumb=picture(p);thumb.className="basket-thumb";
   const content=document.createElement("div");
   const title=document.createElement("b");title.textContent=p.title;
-  const meta=document.createElement("small");meta.textContent="سایز "+c.size+" · "+c.color;
+  const meta=document.createElement("small");meta.textContent=window.ZebarProductCode.fromId(p.id)+" · سایز "+c.size+" · "+c.color;
   const price=document.createElement("strong");price.textContent=toman(p.priceToman*c.qty);
   const qty=document.createElement("div");qty.className="qty";
   const minus=document.createElement("button");minus.type="button";minus.textContent="−";minus.ariaLabel="کم کردن تعداد";
