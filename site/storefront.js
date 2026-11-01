@@ -272,10 +272,12 @@ async function loadSettings(){
 async function loadCatalog(){
  const grid=$("product-grid");
  try{
-  const res=await fetch("/api/products",{cache:"no-store"});if(!res.ok)throw Error("catalog");
-  const data=await res.json();
-  if(!Array.isArray(data.products))throw Error("invalid");
-  catalog=data.products.map(p=>({
+  const products=await window.ZebarCatalogPages.load(async cursor=>{
+   const url=cursor?"/api/products?cursor="+encodeURIComponent(cursor):"/api/products";
+   const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw Error("catalog");
+   return res.json();
+  });
+  catalog=products.map(p=>({
    id:String(p.id),title:String(p.title||""),description:String(p.description||""),
    category:String(p.category||""),categoryIds:Array.isArray(p.categoryIds)?p.categoryIds.map(String):[String(p.category||"")],featured:Boolean(p.featured),priceToman:Math.max(0,Number(p.priceToman)||0),
    compareAtToman:Math.max(0,Number(p.compareAtToman)||0),
