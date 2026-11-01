@@ -31,6 +31,7 @@ function validateParent(cats,id,parentId){
 async function listProducts(db){
  const rows=await db.prepare(
   "SELECT p.id,p.title_fa AS title,p.category,p.active,p.price_toman AS priceToman,"+
+  "(SELECT object_key FROM product_images i WHERE i.product_id=p.id ORDER BY position,id LIMIT 1) AS imageKey,"+
   "COALESCE(d.sort_order,1000) AS sortOrder,COALESCE(d.featured,0) AS featured "+
   "FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC LIMIT 300"
  ).all();
