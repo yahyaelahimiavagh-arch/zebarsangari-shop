@@ -79,3 +79,60 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 }
 @media(max-width:390px){.logo-type b{font-size:18px}.logo-sign{width:34px;height:34px}.cat-tile{flex-basis:126px}.hero-copy h1{font-size:28px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+/* MOBILE CATEGORY UX v3: roots as a responsive grid; subcategories live in catalog filters.
+   Unlike the earlier slider this never cuts a category card at the viewport edge. */
+.category-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;overflow:visible;scroll-snap-type:none;margin:0;padding:0}
+.cat-tile{min-width:0;max-width:100%;text-align:center;scroll-snap-align:none}
+.cat-tile .cat-art{width:100%;aspect-ratio:1.12;max-height:230px;border-radius:15px;transition:transform .2s,box-shadow .2s}
+.cat-tile.selected .cat-art{box-shadow:inset 0 0 0 2px #ad7687,0 5px 18px #8f5d7220}
+.cat-tile.selected b{color:#8c5263}
+.cat-tile b{line-height:1.65}
+.filter-stack{flex:1;min-width:0}
+.catalog-tools{align-items:flex-start}
+.catalog-tools .tabs{display:flex;gap:8px;flex-wrap:wrap;min-width:0;overflow:visible}
+.catalog-tools .tab{border-radius:9px;min-height:40px;white-space:nowrap;padding:8px 15px}
+.catalog-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#8f7981;font-size:12px;margin:9px 0 0}
+.catalog-breadcrumb button{color:#8d6373;border:0;background:transparent;padding:3px 2px;cursor:pointer}
+.catalog-breadcrumb strong{color:#45363b;font-weight:750}
+.subcategory-filters{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:12px;padding:12px 0 0;border-top:1px solid #eae1e2}
+.subcategory-label{color:#8c7b7e;font-size:12px;margin-inline-end:6px}
+.subfilter{background:#fff;border:1px solid #e5d9dd;color:#65575b;border-radius:999px;min-height:36px;padding:6px 15px;font-size:12px}
+.subfilter.active,.subfilter[aria-pressed=true]{background:#f2e2e7;color:#7f465a;border-color:#b88797;font-weight:750}
+@media(max-width:1050px){
+ .category-grid{gap:12px}
+ .catalog-tools{gap:14px}
+}
+@media(max-width:760px){
+ #categories{padding-top:35px;padding-bottom:38px}
+ #categories .section-title{margin-bottom:18px}
+ #categories .section-title h2,.catalog .section-title h2{font-size:22px}
+ .category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:0;padding:0;overflow:visible;scroll-snap-type:none}
+ .cat-tile{flex:initial;scroll-snap-align:none}
+ .cat-tile .cat-art{aspect-ratio:1.06;max-height:none;border-radius:12px}
+ .cat-tile b{margin-top:8px;font-size:13px}
+ .cat-tile small{font-size:10px;line-height:1.6;display:block}
+ .catalog{padding-top:38px;padding-bottom:65px}
+ .catalog-tools{display:flex;flex-direction:column;align-items:stretch;gap:13px}
+ .filter-stack{width:100%}
+ .catalog-tools .tabs{display:flex;gap:7px;flex-wrap:wrap;width:100%;overflow:visible;padding:0;margin:0}
+ .catalog-tools .tab{flex:0 0 auto;white-space:nowrap;min-height:38px;padding:7px 12px;font-size:12px}
+ .catalog-control{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,35%);width:100%;gap:9px}
+ .catalog-control input,.catalog-control select{width:100%;min-width:0;max-width:none;min-height:42px}
+ .subcategory-filters{margin-top:9px;padding-top:10px;gap:7px}
+ .subcategory-label{width:100%;font-size:11px}
+ .subfilter{min-height:36px;font-size:11px;padding:6px 12px}
+ .catalog-breadcrumb{font-size:11px}
+ .section-title{align-items:flex-start}
+ .section-title .more-link{font-size:11px;margin-top:10px}
+ #products{scroll-margin-top:78px}
+}
+@media(max-width:520px){
+ .category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .cat-tile .cat-art{aspect-ratio:1.23}
+ .cat-tile b{font-size:14px}
+ #categories .section-title{gap:10px}
+ #categories .section-title h2{font-size:21px}
+ #categories .section-title p{font-size:11px;line-height:1.7}
+ .catalog-tools .tab{padding:7px 11px}
+}

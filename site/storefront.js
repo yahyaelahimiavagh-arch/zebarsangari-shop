@@ -46,9 +46,16 @@ function discountPct(p){return discounted(p)?Math.round((1-p.priceToman/p.compar
 function renderProducts(){
  if(!loaded)return;
  const grid=$("product-grid");grid.replaceChildren();
+ const categoryIds=new Set(category==="all"?[]:[category,...categoryData.filter(c=>{
+  let parent=c.parentId,seen=new Set([c.id]);
+  while(parent&&!seen.has(parent)){
+   if(parent===category)return true;
+   seen.add(parent);parent=categoryData.find(x=>x.id===parent)?.parentId||null;
+  }
+  return false;
+ }).map(c=>c.id)]);
  let result=catalog.filter(p=>{
-  const descendants=category==="all"?[]:[category,...categoryData.filter(c=>{let id=c.id,seen=new Set();while(id&&!seen.has(id)){if(id===category)return true;seen.add(id);id=categoryData.find(x=>x.id===id)?.parentId||null;}return false;}).map(c=>c.id)];
-  const matchCategory=category==="all"||(p.categoryIds||[p.category]).some(id=>descendants.includes(id));
+  const matchCategory=category==="all"||(p.categoryIds||[p.category]).some(id=>categoryIds.has(id));
   const matchSearch=(p.title+" "+p.description+" "+(label[p.category]||"")+(p.categoryIds||[]).map(id=>label[id]||"").join(" ")).toLocaleLowerCase("fa").includes(query.toLocaleLowerCase("fa"));
   return matchCategory&&matchSearch;
  });
@@ -76,7 +83,7 @@ function renderProducts(){
   quick.addEventListener("click",()=>openProduct(p.id));
   pictureWrap.append(quick);pictureWrap.addEventListener("click",e=>{if(e.target.closest("button"))return;openProduct(p.id);});
   const info=document.createElement("div");info.className="product-info";
-  const categoryTag=document.createElement("span");categoryTag.className="product-kind";categoryTag.textContent=label[p.category]||"محصول";
+  const categoryTag=document.createElement("span");categoryTag.className="product-kind";categoryTag.textContent=label[category!=="all"?category:(p.categoryIds?.[0]||p.category)]||"محصول";
   const name=document.createElement("h3");name.textContent=p.title;
   const prices=document.createElement("div");prices.className="product-price";
   const price=document.createElement("span");price.textContent=toman(p.priceToman);prices.append(price);
@@ -87,7 +94,7 @@ function renderProducts(){
 }
 function setCategory(value){
  category=(value==="all"||Object.prototype.hasOwnProperty.call(label,value))?value:"all";
- document.querySelectorAll("[data-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.filter===category)));
+ renderCategoryControls();
  renderProducts();
 }
 document.querySelectorAll("[data-filter]").forEach(btn=>btn.addEventListener("click",()=>setCategory(btn.dataset.filter)));
@@ -279,54 +286,106 @@ async function loadCatalog(){
  }
 }
 
-function setupCategoryNavigation(data){
- categoryData=data.categories||[];
- if(!categoryData.length)return;
- for(const c of categoryData)label[c.id]=c.name;
- const ordered=[],visited=new Set();
- function walk(parent){
-  for(const c of categoryData.filter(x=>x.parentId===parent).sort((a,b)=>a.sortOrder-b.sortOrder)){
-   if(visited.has(c.id))continue;visited.add(c.id);ordered.push(c);walk(c.id);
+function categoryPath(id){
+ const path=[],seen=new Set();let current=id;
+ while(current && !seen.has(current)){
+  seen.add(current);
+  const node=categoryData.find(x=>x.id===current);
+  if(!node)break;
+  path.unshift(node);current=node.parentId;
+ }
+ return path;
+}
+function renderCategoryControls(){
+ const path=category==="all"?[]:categoryPath(category);
+ const root=path[0];
+ const rootSelected=root?.id||category;
+ document.querySelectorAll("[data-filter]").forEach(b=>
+  b.setAttribute("aria-pressed",String(b.dataset.filter===rootSelected))
+ );
+ document.querySelectorAll(".cat-tile[data-category]").forEach(a=>{
+  const active=a.dataset.category===rootSelected && category!=="all";
+  a.classList.toggle("selected",active);
+  if(active)a.setAttribute("aria-current","true");else a.removeAttribute("aria-current");
+ });
+ const breadcrumb=$("catalog-breadcrumb");
+ breadcrumb.replaceChildren();breadcrumb.hidden=!path.length;
+ if(path.length){
+  const all=document.createElement("button");all.type="button";all.textContent="همه محصولات";all.onclick=()=>setCategory("all");breadcrumb.append(all);
+  for(const [index,node] of path.entries()){
+   const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");breadcrumb.append(sep);
+   if(index===path.length-1){
+    const current=document.createElement("strong");current.textContent=node.name;current.setAttribute("aria-current","page");breadcrumb.append(current);
+   }else{
+    const b=document.createElement("button");b.type="button";b.textContent=node.name;b.onclick=()=>setCategory(node.id);breadcrumb.append(b);
+   }
   }
  }
- walk(null);for(const c of categoryData)if(!visited.has(c.id))ordered.push(c);
+ const sub=$("subcategory-filters");sub.replaceChildren();sub.hidden=true;
+ if(!root||!categoryData.length)return;
+ // Show the selected node's children; if it's a leaf, keep siblings accessible.
+ const children=categoryData.filter(c=>c.parentId===category).sort((a,b)=>a.sortOrder-b.sortOrder);
+ const parentId=children.length?category:(path.length>1?path[path.length-2].id:root.id);
+ const options=children.length?children:categoryData.filter(c=>c.parentId===parentId).sort((a,b)=>a.sortOrder-b.sortOrder);
+ if(!options.length)return;
+ sub.hidden=false;
+ const labelText=document.createElement("span");labelText.className="subcategory-label";
+ labelText.textContent=category===parentId?"زیردسته‌ها:":"بخش‌های مرتبط:";
+ sub.append(labelText);
+ const all=document.createElement("button");all.type="button";all.className="subfilter"+(category===parentId?" active":"");
+ all.textContent="همه "+(label[parentId]||"محصولات");all.setAttribute("aria-pressed",String(category===parentId));
+ all.onclick=()=>setCategory(parentId);sub.append(all);
+ for(const c of options){
+  const b=document.createElement("button");b.type="button";b.className="subfilter"+(c.id===category?" active":"");
+  b.textContent=c.name;b.setAttribute("aria-pressed",String(c.id===category));b.onclick=()=>setCategory(c.id);sub.append(b);
+ }
+}
+function setupCategoryNavigation(data){
+ categoryData=Array.isArray(data.categories)?data.categories:[];
+ if(!categoryData.length)return;
+ for(const c of categoryData)label[c.id]=c.name;
+ const roots=categoryData.filter(c=>!c.parentId).sort((a,b)=>a.sortOrder-b.sortOrder);
  const grid=document.querySelector("#categories .category-grid");
  const templates={};
  for(const item of grid.querySelectorAll("[data-category]")){
-  const id=item.dataset.category;templates[id]=item.querySelector(".cat-art")?.cloneNode(true);
+  templates[item.dataset.category]=item.querySelector(".cat-art")?.cloneNode(true);
+ }
+ function iconFor(c){
+  return ["women","men","kids","socks","accessories"].includes(c.id)?c.id:"accessories";
  }
  grid.replaceChildren();
- function iconFor(c){
-  let parent=c,seen=new Set();
-  while(parent?.parentId&&!seen.has(parent.id)){seen.add(parent.id);parent=categoryData.find(x=>x.id===parent.parentId);}
-  return ["women","men","kids","socks","accessories"].includes(parent?.id)?parent.id:"accessories";
- }
- for(const c of ordered){
+ for(const c of roots){
   const item=document.createElement("a");item.href="#products";item.className="cat-tile";item.dataset.category=c.id;
   const art=(templates[iconFor(c)]||templates.accessories)?.cloneNode(true);
   if(art)item.append(art);
   const title=document.createElement("b");title.textContent=c.name;
-  const sub=document.createElement("small");sub.textContent=c.parentId?"زیرمجموعه "+(label[c.parentId]||""):"COLLECTION";
+  const sub=document.createElement("small");
+  const childCount=categoryData.filter(x=>x.parentId===c.id).length;
+  sub.textContent=childCount?fa(childCount)+" زیردسته":"مشاهده محصولات";
   item.append(title,sub);
-  item.onclick=()=>setCategory(c.id);grid.append(item);
+  item.addEventListener("click",()=>setCategory(c.id));
+  grid.append(item);
  }
  const tabs=document.querySelector(".tabs");tabs.replaceChildren();
- const all=document.createElement("button");all.className="tab";all.dataset.filter="all";all.textContent="همه";all.onclick=()=>setCategory("all");tabs.append(all);
- for(const c of ordered){
-  const b=document.createElement("button");b.className="tab";b.dataset.filter=c.id;b.textContent=c.name;
-  b.onclick=()=>setCategory(c.id);tabs.append(b);
+ const all=document.createElement("button");all.type="button";all.className="tab";all.dataset.filter="all";
+ all.textContent="همه محصولات";all.onclick=()=>setCategory("all");tabs.append(all);
+ for(const c of roots){
+  const b=document.createElement("button");b.type="button";b.className="tab";b.dataset.filter=c.id;
+  b.textContent=c.name;b.onclick=()=>setCategory(c.id);tabs.append(b);
  }
- const roots=ordered.filter(c=>!c.parentId).slice(0,6);
  for(const nav of [document.querySelector(".desktop-nav"),document.getElementById("mobile-menu")]){
+  if(!nav)continue;
   nav.querySelectorAll("[data-menu-cat]").forEach(el=>el.remove());
   const before=nav.querySelector('a[href="#about"],a[href="#contact"]');
-  for(const c of roots){
+  for(const c of roots.slice(0,7)){
    const a=document.createElement("a");a.href="#products";a.dataset.menuCat=c.id;a.textContent=c.name;
    a.onclick=()=>{setCategory(c.id);closeMenu();};
    nav.insertBefore(a,before);
   }
  }
- setCategory(category);
+ if(category!=="all"&&!label[category])category="all";
+ renderCategoryControls();
+ renderProducts();
 }
 function applyHomeLayout(sections){
  if(!sections?.length)return;

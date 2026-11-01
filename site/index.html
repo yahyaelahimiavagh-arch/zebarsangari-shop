@@ -50,7 +50,7 @@
 </div></section>
 <section class="section" id="categories"><div class="wrap">
 <div class="section-title"><div><span class="eyebrow">SHOP BY CATEGORY</span><h2>دسته‌بندی محصولات</h2><p>با یک انتخاب، به مجموعه دلخواهت برس</p></div><a class="more-link" href="#products">مشاهده همه ←</a></div>
-<div class="category-grid">
+<div class="category-grid" aria-label="دسته‌بندی‌های اصلی">
 <a href="#products" class="cat-tile" data-category="women"><div class="cat-art women"><svg viewBox="0 0 120 120"><path d="M39 15 59 24 81 15l17 24-17 13-7-10 6 60H39l6-60-7 10-18-13Z"/><path d="M59 24v78M45 43h28"/></svg></div><b>زنانه</b><small>Women's</small></a>
 <a href="#products" class="cat-tile" data-category="men"><div class="cat-art men"><svg viewBox="0 0 120 120"><path d="m26 22 21-8 13 13 13-13 21 8 12 29-20 8-6-16v56H40V43l-6 16-20-8Z"/><path d="m47 14 13 18 13-18M40 43h40"/></svg></div><b>مردانه</b><small>Men's</small></a>
 <a href="#products" class="cat-tile" data-category="kids"><div class="cat-art kids"><svg viewBox="0 0 120 120"><path d="m40 23 20 10 20-10 21 24-17 13-6-9v47H42V51l-6 9-17-13Z"/><path d="M49 28c2 18 20 18 22 0"/><path d="M59 62c-8-12-18 0 0 15 18-15 8-27 0-15Z"/></svg></div><b>بچگانه</b><small>Kids</small></a>
@@ -58,15 +58,15 @@
 <a href="#products" class="cat-tile" data-category="accessories"><div class="cat-art accessories"><svg viewBox="0 0 120 120"><path d="M30 44h60v54H30Z"/><path d="M45 44V34c0-18 30-18 30 0v10"/><path d="M42 72h36"/><path d="M60 61v22"/></svg></div><b>اکسسوری</b><small>Accessories</small></a>
 </div></div></section>
 <section class="catalog section" id="products"><div class="wrap">
-<div class="section-title"><div><span class="eyebrow">NEW & SELECTED</span><h2>تازه‌ترین انتخاب‌ها</h2><p id="catalog-caption">مدل‌های ثبت‌شده در فروشگاه زبرسنگری</p></div><span id="products-count" style="font-size:12px;color:#8a7d7e"></span></div>
+<div class="section-title"><div><span class="eyebrow">NEW & SELECTED</span><h2>محصولات فروشگاه</h2><p id="catalog-caption">محصولات و مدل‌های موجود زبرسنگری</p><nav id="catalog-breadcrumb" class="catalog-breadcrumb" aria-label="مسیر دسته‌بندی" hidden></nav></div><span id="products-count" style="font-size:12px;color:#8a7d7e"></span></div>
 <div class="catalog-tools">
-<div class="tabs" aria-label="فیلتر دسته‌بندی">
+<div class="filter-stack"><div class="tabs" aria-label="دسته‌بندی‌های اصلی">
 <button class="tab" data-filter="all" aria-pressed="true">همه</button>
 <button class="tab" data-filter="women" aria-pressed="false">زنانه</button>
 <button class="tab" data-filter="men" aria-pressed="false">مردانه</button>
 <button class="tab" data-filter="kids" aria-pressed="false">بچگانه</button>
 <button class="tab" data-filter="socks" aria-pressed="false">جوراب</button>
-<button class="tab" data-filter="accessories" aria-pressed="false">اکسسوری</button></div>
+<button class="tab" data-filter="accessories" aria-pressed="false">اکسسوری</button></div><div id="subcategory-filters" class="subcategory-filters" aria-label="زیردسته‌ها" hidden></div></div>
 <div class="catalog-control"><input type="search" id="product-search" placeholder="جست‌وجوی محصول…" aria-label="جست‌وجو"><select id="sort-products" aria-label="مرتب‌سازی محصولات"><option value="latest">جدیدترین</option><option value="cheapest">ارزان‌ترین</option><option value="expensive">گران‌ترین</option><option value="sale">بیشترین تخفیف</option></select></div>
 </div>
 <div id="product-grid" class="product-grid" aria-live="polite"><div class="empty">در حال دریافت محصولات…</div></div>
