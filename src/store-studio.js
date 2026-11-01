@@ -140,7 +140,18 @@ export async function handleStudioPublic(req,env){
  try{
   if(!env.DB)return out({error:"not_configured"},503);
   const [cats,sections]=await Promise.all([allCategories(env.DB),layout(env.DB)]);
-  return out({categories:cats.filter(c=>c.visible),sections});
+  const visible=cats.filter(c=>{
+    if(!c.visible)return false;
+    let parent=c.parentId,seen=new Set([c.id]);
+    while(parent){
+      if(seen.has(parent))return false;
+      seen.add(parent);const node=cats.find(x=>x.id===parent);
+      if(!node||!node.visible)return false;
+      parent=node.parentId;
+    }
+    return true;
+  });
+  return out({categories:visible,sections});
  }catch(error){
   if(String(error?.message||"").includes("no such table"))return out({categories:[
    {id:"women",name:"زنانه",parentId:null,sortOrder:10,visible:true},
