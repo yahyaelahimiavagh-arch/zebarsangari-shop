@@ -176,7 +176,7 @@ $("deleteCategory").onclick=async()=>{
  try{await api("/api/admin/studio/categories/"+selectedCategory,{method:"DELETE"});selectedCategory=null;await refreshCategories();note("دسته حذف شد.");}
  catch(e){note(e.message,true);}
 };
-function orderedProducts(){return [...products].sort((a,b)=>a.sortOrder-b.sortOrder||a.title.localeCompare(b.title,"fa"));}
+function orderedProducts(){return [...products].sort((a,b)=>a.sortOrder-b.sortOrder);}
 function renderProducts(){
  const list=$("productList");list.replaceChildren();
  const all=orderedProducts(),query=$("searchProducts").value.trim().toLocaleLowerCase("fa");
