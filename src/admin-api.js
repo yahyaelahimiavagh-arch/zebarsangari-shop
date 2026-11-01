@@ -1,4 +1,5 @@
 import {handleAdminCheckout} from "./checkout.js";
+import {handleStudioAdmin} from "./store-studio.js";
 // Secure single-owner catalog administration for Cloudflare Workers.
 // Production activation requires ADMIN_PASSWORD and SESSION_SECRET (Worker secrets),
 // the D1 login-attempts migration, and an optional IMAGES KV namespace.
@@ -240,6 +241,10 @@ export async function handleAdmin(request,env) {
   if(path==="/api/admin/orders" || path.startsWith("/api/admin/orders/") || path==="/api/admin/shop-settings"){
     if(method!=="GET" && !requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
     return handleAdminCheckout(request,env);
+  }
+  if(path.startsWith("/api/admin/studio/")){
+    if(method!=="GET" && !requireCsrf(request,session))return respond({error:"invalid_csrf"},403);
+    return handleStudioAdmin(request,env);
   }
   if(!requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
   if(path==="/api/admin/logout" && method==="POST")
