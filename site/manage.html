@@ -5,6 +5,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>مدیریت فروشگاه زبرسنگری</title>
 <style>
+.orders-filters{display:grid;grid-template-columns:minmax(160px,1fr) minmax(150px,220px) auto auto;align-items:end;gap:9px;margin:16px 0}
+.orders-filters label{font-size:12px;display:block;color:#67575f}
+.orders-filters input,.orders-filters select{min-width:0;width:100%;margin-top:5px}
+.orders-filters button{min-height:43px}
+@media(max-width:700px){.orders-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.orders-filters label:first-child{grid-column:1/-1}}
+
 :root{font-family:Tahoma,Arial,sans-serif;background:#fbf7f5;color:#28211f;--rose:#b97888;--ink:#292220;--bg:#fff;--line:#e9dad6}
 *{box-sizing:border-box}body{margin:0}header{background:#292220;color:#fff;padding:18px 4%;display:flex;gap:16px;align-items:center;justify-content:space-between}
 header strong{font-size:20px}header small{display:block;color:#edcdd6;margin-top:4px}button,input,select,textarea{font:inherit}
@@ -111,7 +117,23 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 <h2>سفارش‌های دریافتی</h2><button type="button" class="secondary" id="reloadOrders">بروزرسانی سفارش‌ها</button>
 </div>
 <p class="muted">مشتری تصویر رسید را در پیام‌رسان می‌فرستد. قبل از تأیید پرداخت، واریز را در حساب بانکی بررسی کن.</p>
+<form id="ordersFilterForm" class="orders-filters" autocomplete="off">
+<label>جست‌وجوی سفارش<input type="search" id="ordersSearch" maxlength="22" placeholder="کد سفارش، نام یا شماره تلفن"></label>
+<label>وضعیت
+<select id="ordersStatus">
+<option value="">همه وضعیت‌ها</option>
+<option value="pending">در انتظار بررسی</option>
+<option value="receipt_submitted">رسید دریافت شده</option>
+<option value="confirmed">پرداخت تأییدشده</option>
+<option value="shipped">ارسال‌شده</option>
+<option value="cancelled">لغوشده</option>
+</select></label>
+<button type="submit" id="ordersFilterSubmit">جست‌وجو</button>
+<button type="button" class="secondary" id="ordersFilterClear">پاک کردن</button>
+</form>
+<p class="muted" id="ordersLoadedCount" aria-live="polite"></p>
 <div id="ordersList"></div>
+<div class="buttons"><button type="button" class="secondary" id="moreOrders" hidden>نمایش سفارش‌های قدیمی‌تر</button></div>
 <div id="orderDetails" class="hidden" style="margin-top:15px;border-top:1px solid #e9dad6;padding-top:15px"></div>
 </section>
 </div>
@@ -321,17 +343,41 @@ $("settingsForm").onsubmit=async e=>{
  finally{$("saveSettings").disabled=false}
 };
 const statuses={pending:"در انتظار بررسی",receipt_submitted:"رسید دریافت شده",confirmed:"پرداخت تأییدشده",shipped:"ارسال‌شده",cancelled:"لغوشده"};
-async function loadOrders(){
- const data=await api("/api/admin/orders");
- const list=$("ordersList");list.replaceChildren();
- if(!data.orders?.length){const empty=document.createElement("p");empty.textContent="هنوز سفارشی ثبت نشده است.";empty.className="muted";list.append(empty);return}
- for(const o of data.orders){
+let ordersNextCursor=null,ordersBusy=false,ordersShown=0;
+async function loadOrders(append=false){
+ if(ordersBusy)return;
+ if(append&&!ordersNextCursor)return;
+ ordersBusy=true;
+ $("moreOrders").disabled=true;
+ const list=$("ordersList");
+ try {
+  const params=new URLSearchParams({limit:"25"});
+  const q=$("ordersSearch").value.trim();
+  const status=$("ordersStatus").value;
+  if(q)params.set("q",q);
+  if(status)params.set("status",status);
+  if(append)params.set("cursor",ordersNextCursor);
+  const data=await api("/api/admin/orders?"+params);
+  if(!append){list.replaceChildren();ordersShown=0;}
+  ordersShown+=(data.orders||[]).length;
+  ordersNextCursor=data.nextCursor||null;
+  $("moreOrders").hidden=!ordersNextCursor;
+  $("ordersLoadedCount").textContent="تعداد سفارش‌های نمایش‌داده‌شده: "+ordersShown.toLocaleString("fa-IR")+(ordersNextCursor?" — سفارش‌های قدیمی‌تر هم وجود دارند.":"");
+  if(!data.orders?.length&&!append){
+   const empty=document.createElement("p");empty.textContent="سفارشی با این شرایط پیدا نشد.";empty.className="muted";list.append(empty);
+   return;
+  }
+  for(const o of data.orders||[]){
   const card=document.createElement("div");card.style.cssText="padding:14px;margin-bottom:12px;border:1px solid #e9dad6;border-radius:13px";
   const title=document.createElement("strong");title.textContent=o.code+" — "+o.buyer_name;
   const sub=document.createElement("p");sub.className="muted";sub.textContent="ثبت سفارش: "+orderDate(o.created_at)+"\nوضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman);sub.style.whiteSpace="pre-line";
   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="جزئیات و مدیریت";
   btn.onclick=()=>showOrder(o.id);
   card.append(title,sub,btn);list.append(card);
+  }
+ }finally{
+  ordersBusy=false;
+  $("moreOrders").disabled=false;
  }
 }
 async function showOrder(id){
@@ -366,6 +412,12 @@ box.scrollIntoView({behavior:"smooth"});
  }catch(e){msg("خطا در خواندن سفارش: "+e.message)}
 }
 $("reloadOrders").onclick=()=>loadOrders().catch(e=>msg(e.message));
+$("moreOrders").onclick=()=>loadOrders(true).catch(e=>msg(e.message));
+$("ordersFilterForm").onsubmit=e=>{e.preventDefault();loadOrders().catch(e=>msg(e.message));};
+$("ordersFilterClear").onclick=()=>{
+ $("ordersSearch").value="";$("ordersStatus").value="";
+ loadOrders().catch(e=>msg(e.message));
+};
 async function loadCommerce(){await Promise.all([loadShopSettings(),loadOrders()])}
 
 $("loginForm").onsubmit=async(e)=>{
