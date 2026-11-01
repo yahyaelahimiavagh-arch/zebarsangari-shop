@@ -18,9 +18,10 @@
 <div class="summary-row"><div class="stat"><span>دسته‌بندی‌ها</span><b id="categoryCount">—</b></div><div class="stat"><span>کل محصولات</span><b id="productCount">—</b></div><div class="stat"><span>محصولات ویژه</span><b id="featuredCount">—</b></div></div>
 <nav class="tabs" aria-label="بخش‌های پنل">
 <button class="tab active" data-tab="categories" aria-current="page">دسته‌بندی‌ها</button>
+<button class="tab" data-tab="editor">افزودن و ویرایش کالا</button>
 <button class="tab" data-tab="products">چیدمان محصولات</button>
 <button class="tab" data-tab="homepage">صفحه اصلی</button>
-<a class="tab extra" href="/manage.html">افزودن و ویرایش کالا ↗</a>
+<a class="tab extra" href="/manage.html">سفارش‌ها و تنظیمات ↗</a>
 </nav>
 <section id="tab-categories" class="tab-panel">
 <div class="section-title"><div><h2>دسته‌بندی‌های فروشگاه</h2><p>دسته و زیردسته بساز، آن‌ها را جابه‌جا کن یا نمایششان را کنترل کن.</p></div><button class="outline" id="reloadCategories">بروزرسانی</button></div>
@@ -29,11 +30,58 @@
 <div class="card"><h3>افزودن دسته جدید</h3><form id="createCategory"><label>نام دسته<input id="newCatName" maxlength="64" placeholder="مثلاً سوتین" required></label><label>زیرمجموعه <select id="newCatParent"><option value="">دسته اصلی</option></select></label><button class="primary" type="submit" id="addCategory">ساخت دسته</button></form><hr><h3>ویرایش دسته</h3><form id="editCategory"><label>دسته انتخابی<input id="editCatName" maxlength="64" placeholder="ابتدا یک دسته را انتخاب کن" required disabled></label><label>زیرمجموعه <select id="editCatParent" disabled></select></label><label class="check"><input id="editCatVisible" type="checkbox" disabled> در ویترین نمایش داده شود</label><div class="actions"><button type="submit" class="primary" id="saveCategory" disabled>ذخیره تغییرات</button><button type="button" class="danger" id="deleteCategory" disabled>حذف</button></div></form><p class="hint">حذف فقط برای دسته‌ای ممکن است که زیردسته و محصول نداشته باشد.</p></div>
 </div>
 </section>
+<section id="tab-editor" class="tab-panel" hidden>
+<div class="section-title"><div><h2 id="catalogEditorTitle">افزودن محصول جدید</h2>
+<p>مشخصات کالا، قیمت، دسته‌بندی، رنگ، سایز، موجودی و عکس‌ها را در همین پنل مدیریت کن.</p></div>
+<button id="newCatalogItem" type="button" class="outline">+ محصول جدید</button></div>
+<div class="columns editor-columns">
+<div class="card">
+<form id="catalogEditorForm" novalidate>
+<div class="form-two">
+<label>نام محصول <span class="required">*</span><input id="itemTitle" maxlength="180" placeholder="مثلاً ست نخی زنانه" required></label>
+<label>دسته اصلی محصول <span class="required">*</span><select id="itemMainCategory" required></select></label>
+<label>قیمت فروش (تومان) <span class="required">*</span><input id="itemPrice" type="number" inputmode="numeric" min="0" max="10000000000" required placeholder="0"></label>
+<label>قیمت قبل از تخفیف (اختیاری)<input id="itemOldPrice" type="number" inputmode="numeric" min="0" max="10000000000" placeholder="0"></label>
+</div>
+<label>توضیحات محصول <textarea id="itemDescription" maxlength="4000" rows="4" placeholder="جنس پارچه، نکات شست‌وشو و مشخصات کالا…"></textarea></label>
+<div class="form-two tick-grid">
+<label class="check featured"><input id="itemActive" type="checkbox" checked> نمایش محصول در فروشگاه</label>
+<label class="check featured"><input id="itemFeatured" type="checkbox"> محصول ویژه</label>
+</div>
+<h3 class="editor-heading">دسته‌بندی‌های محصول</h3>
+<p class="hint">یک کالا می‌تواند در چند دسته و زیردسته نمایش داده شود. دسته اصلی باید انتخاب شده باشد.</p>
+<div id="itemCategoryChoices" class="checkbox-list"></div>
+<div class="editor-heading-line"><h3>سایز، رنگ و موجودی</h3><span class="hint">برای هر ترکیب، یک ردیف بساز</span></div>
+<div id="itemVariants" class="editor-variants"></div>
+<button type="button" id="addItemVariant" class="outline">+ افزودن تنوع</button>
+<div class="actions editor-actions">
+<button id="saveCatalogItem" type="submit" class="primary">ذخیره محصول</button>
+<button id="resetCatalogItem" type="button" class="outline">پاک‌کردن فرم</button>
+</div>
+<p class="hint">ذخیره تغییرات پس از ثبت، مستقیماً روی ویترین فروشگاه اعمال می‌شود.</p>
+</form>
+</div>
+<aside class="card sticky-card">
+<h3>تصاویر محصول</h3><p id="imageHelp" class="muted">ابتدا محصول را ذخیره کن تا امکان افزودن تصویر فعال شود.</p>
+<div id="editorImages" class="editor-images"></div>
+<div id="imageUploadBlock" hidden>
+<label>انتخاب عکس محصول (تا ۱۰ تصویر)
+<input id="itemImageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+<button id="uploadItemImages" type="button" class="outline wide">آپلود تصاویر انتخاب‌شده</button>
+<p id="uploadProgress" class="hint" role="status"></p>
+<p class="hint">اولین عکس، تصویر اصلی محصول است. ترتیب عکس‌ها را با فلش تغییر بده. تصویرها پیش از ارسال به WebP تبدیل می‌شوند.</p>
+</div>
+<hr><h3>نکات تکمیل محصول</h3>
+<p class="hint">برای محصولات لباس زیر بهتر است جنس، اندازه‌بندی دقیق و رنگ را مشخص کنی تا مشتری پیش از ثبت سفارش انتخاب درستی داشته باشد.</p>
+<a class="outline" href="/" target="_blank" rel="noopener">پیش‌نمایش فروشگاه ↗</a>
+</aside>
+</div>
+</section>
 <section id="tab-products" class="tab-panel" hidden>
-<div class="section-title"><div><h2>چیدمان و اولویت محصولات</h2><p>ترتیب را با دکمه‌ها یا Drag & Drop تغییر بده. دسته‌های هر کالا را جداگانه تعیین کن.</p></div><a class="outline" href="/manage.html">افزودن محصول جدید ↗</a></div>
+<div class="section-title"><div><h2>چیدمان و اولویت محصولات</h2><p>ترتیب را با دکمه‌ها یا Drag & Drop تغییر بده. دسته‌های هر کالا را جداگانه تعیین کن.</p></div><button type="button" id="newFromRanking" class="outline">+ افزودن محصول جدید</button></div>
 <div class="columns products-columns">
 <div class="card"><div class="row-between"><h3>ترتیب نمایش</h3><input type="search" id="searchProducts" placeholder="جست‌وجوی نام محصول"></div><div id="productList" class="sortable-list"></div><p class="hint">ترتیب تغییرات بلافاصله بعد از جابه‌جایی ذخیره می‌شود. جابه‌جایی هنگام جست‌وجو غیرفعال است.</p></div>
-<div class="card sticky-card"><h3>تنظیمات محصول انتخابی</h3><p id="selectedProductName" class="muted">یک محصول از لیست انتخاب کن.</p><form id="productForm"><label class="check featured"><input id="productFeatured" type="checkbox" disabled> نمایش به‌عنوان محصول ویژه</label><p class="micro-title">نمایش محصول در دسته‌بندی‌ها</p><div id="productCategories" class="checkbox-list"></div><button class="primary wide" type="submit" id="saveProduct" disabled>ذخیره دسته‌ها و وضعیت ویژه</button></form><p class="hint">سایز، رنگ، موجودی و تصویر را از «مدیریت محصولات» قبلی ویرایش کن.</p></div>
+<div class="card sticky-card"><h3>تنظیمات محصول انتخابی</h3><p id="selectedProductName" class="muted">یک محصول از لیست انتخاب کن.</p><form id="productForm"><label class="check featured"><input id="productFeatured" type="checkbox" disabled> نمایش به‌عنوان محصول ویژه</label><p class="micro-title">نمایش محصول در دسته‌بندی‌ها</p><div id="productCategories" class="checkbox-list"></div><button class="primary wide" type="submit" id="saveProduct" disabled>ذخیره دسته‌ها و وضعیت ویژه</button></form><button type="button" id="editFullProduct" class="outline wide" disabled>ویرایش کامل مشخصات و عکس‌ها ↗</button></div>
 </div>
 </section>
 <section id="tab-homepage" class="tab-panel" hidden>
