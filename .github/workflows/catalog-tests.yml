@@ -1,0 +1,27 @@
+name: Catalog regression tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax
+        run: |
+          node --check src/index.js
+          node --check src/checkout.js
+          node --check src/admin-api.js
+          node --check src/store-studio.js
+          node --check site/storefront.js
+          node --check site/checkout.js
+          node --check site/studio.js
+      - name: Test catalog query boundaries
+        run: node --test tests/catalog.test.mjs
