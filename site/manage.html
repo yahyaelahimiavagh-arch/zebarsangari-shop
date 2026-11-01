@@ -127,6 +127,17 @@ let csrf="", products=[], editId=null, offset=0;
 const msg=(text,good=false)=>{const n=$("notice");n.textContent=text;n.className=good?"ok":"";n.style.display="block";window.scrollTo({top:0,behavior:"smooth"});};
 const clearMsg=()=>{$("notice").style.display="none";};
 const fa=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
+const orderDate=value=>{
+ if(!value)return "زمان نامشخص";
+ const raw=String(value).trim().replace(" ","T");
+ const utc=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)?raw:raw+"Z";
+ const date=new Date(utc);
+ if(Number.isNaN(date.getTime()))return "زمان نامشخص";
+ return new Intl.DateTimeFormat("fa-IR-u-ca-persian",{
+  timeZone:"Asia/Tehran",year:"numeric",month:"long",day:"numeric",
+  hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+ }).format(date)+" (ساعت ایران)";
+};
 async function api(path,opts={}) {
  const headers={...opts.headers};
  if(opts.json){headers["Content-Type"]="application/json";opts.body=JSON.stringify(opts.json);delete opts.json;}
@@ -206,10 +217,12 @@ function productCard(p) {
  }
  const meta=document.createElement("div");
  const heading=document.createElement("h3");heading.textContent=p.title;
+ const code=document.createElement("small");code.style.cssText="display:block;color:#90727b;font-size:12px;direction:ltr;text-align:right";
+ code.textContent="کد محصول: "+window.ZebarProductCode.fromId(p.id);
  const price=document.createElement("div");price.textContent=fa(p.priceToman);
  const state=document.createElement("span");state.className="pill";state.textContent=p.active?"فعال":"غیرفعال";
  const stock=document.createElement("p");stock.className="muted";stock.textContent="موجودی کل: "+p.variants.reduce((s,v)=>s+v.stock,0)+" | تنوع: "+p.variants.length;
- meta.append(heading,price,state,stock);top.append(photo,meta);card.append(top);
+ meta.append(heading,code,price,state,stock);top.append(photo,meta);card.append(top);
  const actions=document.createElement("div");actions.className="buttons";
  const edit=document.createElement("button");edit.className="secondary";edit.textContent="ویرایش";
  edit.onclick=()=>editProduct(p.id);
@@ -315,7 +328,7 @@ async function loadOrders(){
  for(const o of data.orders){
   const card=document.createElement("div");card.style.cssText="padding:14px;margin-bottom:12px;border:1px solid #e9dad6;border-radius:13px";
   const title=document.createElement("strong");title.textContent=o.code+" — "+o.buyer_name;
-  const sub=document.createElement("p");sub.className="muted";sub.textContent="وضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman);
+  const sub=document.createElement("p");sub.className="muted";sub.textContent="ثبت سفارش: "+orderDate(o.created_at)+"\nوضعیت: "+(statuses[o.status]||o.status)+" | "+fa(o.subtotal_toman);sub.style.whiteSpace="pre-line";
   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="جزئیات و مدیریت";
   btn.onclick=()=>showOrder(o.id);
   card.append(title,sub,btn);list.append(card);
@@ -327,12 +340,14 @@ async function showOrder(id){
   const o=data.order;
   const box=$("orderDetails");box.classList.remove("hidden");box.replaceChildren();
   const heading=document.createElement("h3");heading.textContent="سفارش "+o.code;box.append(heading);
+  const timestamp=document.createElement("p");timestamp.className="muted";timestamp.style.cssText="padding:10px 12px;background:#f8f0f2;border-radius:8px;font-weight:700";
+  timestamp.textContent="تاریخ و ساعت ثبت سفارش: "+orderDate(o.created_at);box.append(timestamp);
   const info=document.createElement("p");info.style.whiteSpace="pre-line";
   info.textContent="نام: "+o.buyer_name+"\nتلفن: "+o.buyer_phone+"\nشهر: "+o.city+"\nآدرس: "+o.delivery_address+"\nروش: "+o.contact_channel+"\nمبلغ کالاها: "+fa(o.subtotal_toman);
   box.append(info);
   for(const p of data.lines||[]){
    const line=document.createElement("p");line.className="muted";
-   line.textContent=p.product_title+" | "+p.size_label+" | "+p.color_label+" | تعداد: "+p.quantity+" | "+fa(p.line_total_toman);
+   line.textContent=p.product_title+" | کد: "+window.ZebarProductCode.fromId(p.product_id)+" | "+p.size_label+" | "+p.color_label+" | تعداد: "+p.quantity+" | "+fa(p.line_total_toman);
    box.append(line);
   }
   const select=document.createElement("select");
