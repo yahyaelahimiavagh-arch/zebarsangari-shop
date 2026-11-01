@@ -142,8 +142,14 @@ async function createOrder(request,env){
   ).bind(crypto.randomUUID(),orderId,line.row.product_id,line.row.variant_id,line.row.title_fa,line.row.size_label,line.row.color_label,line.qty,line.unit,line.total));
  }
  await env.DB.batch(stmts);
- const storedOrder=await env.DB.prepare("SELECT created_at FROM manual_orders WHERE id=?").bind(orderId).first();
- return json({ok:true,code,orderId,subtotalToman:subtotal,status:"pending",manualReview:true,createdAt:storedOrder?.created_at||null,
+ // Order is already committed. A secondary timestamp read must never turn
+ // a successful submission into an apparent failure (risk of duplicate orders).
+ let createdAt=null;
+ try{
+  const row=await env.DB.prepare("SELECT created_at FROM manual_orders WHERE id=?").bind(orderId).first();
+  createdAt=row?.created_at||null;
+ }catch(error){console.warn("Noncritical order timestamp read failed:",error?.message);}
+ return json({ok:true,code,orderId,subtotalToman:subtotal,status:"pending",manualReview:true,createdAt,
   note:"سفارش فقط درخواست ثبت شده است؛ پرداخت و موجودی تا تایید فروشنده قطعی نیست."},201);
 }
 export async function handlePublicCheckout(request,env){
