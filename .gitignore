@@ -4,3 +4,6 @@ node_modules/
 .env
 .env.*
 .DS_Store
+
+# Customer PII / production D1 and KV exports: must never enter GitHub
+private-backups/
