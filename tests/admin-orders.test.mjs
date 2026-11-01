@@ -26,8 +26,8 @@ function makeDb(orders){
     let next=orders.slice();
     let offset=0;
     if(sql.includes("status=?"))next=next.filter(o=>o.status===values[offset++]);
-    if(sql.includes("code LIKE ?")){
-     const v=values[offset].slice(1,-1).replace(/!([!%_])/g,"$1");
+    if(sql.includes("instr(lower(code)")){
+     const v=values[offset];
      offset+=3;
      next=next.filter(o=>[o.code,o.buyer_phone,o.buyer_name].some(f=>f.toLowerCase().includes(v.toLowerCase())));
     }
@@ -77,7 +77,7 @@ test("status and phone search combine",async()=>{
 });
 test("invalid cursor, status and overlong search fail safely",async()=>{
  const db=makeDb(makeOrders());
- for(const query of ["?cursor=bad%25","?status=hacked","?q="+encodeURIComponent("الف".repeat(30))]){
+ for(const query of ["?cursor=bad%25","?status=hacked","?q="+encodeURIComponent("الف".repeat(60))]){
   const d=await fetchOrders(db,query);assert.equal(d.status,400);
  }
 });
