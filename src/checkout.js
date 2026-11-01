@@ -142,7 +142,8 @@ async function createOrder(request,env){
   ).bind(crypto.randomUUID(),orderId,line.row.product_id,line.row.variant_id,line.row.title_fa,line.row.size_label,line.row.color_label,line.qty,line.unit,line.total));
  }
  await env.DB.batch(stmts);
- return json({ok:true,code,orderId,subtotalToman:subtotal,status:"pending",manualReview:true,
+ const storedOrder=await env.DB.prepare("SELECT created_at FROM manual_orders WHERE id=?").bind(orderId).first();
+ return json({ok:true,code,orderId,subtotalToman:subtotal,status:"pending",manualReview:true,createdAt:storedOrder?.created_at||null,
   note:"سفارش فقط درخواست ثبت شده است؛ پرداخت و موجودی تا تایید فروشنده قطعی نیست."},201);
 }
 export async function handlePublicCheckout(request,env){
@@ -208,7 +209,7 @@ async function adminOrders(request,env){
  if(!sub && method==="GET"){
   const order=await env.DB.prepare("SELECT id,code,buyer_name,buyer_phone,city,delivery_address,contact_channel,status,subtotal_toman,created_at FROM manual_orders WHERE id=?").bind(id).first();
   if(!order)return json({error:"not_found"},404);
-  const lines=await env.DB.prepare("SELECT product_title,size_label,color_label,quantity,unit_price_toman,line_total_toman FROM manual_order_lines WHERE order_id=?").bind(id).all();
+  const lines=await env.DB.prepare("SELECT product_id,product_title,size_label,color_label,quantity,unit_price_toman,line_total_toman FROM manual_order_lines WHERE order_id=?").bind(id).all();
   return json({order,lines:lines.results||[]});
  }
  return json({error:"not_found"},404);
