@@ -47,7 +47,7 @@ function renderProducts(){
  if(!loaded)return;
  const grid=$("product-grid");grid.replaceChildren();
  let result=catalog.filter(p=>{
-  const descendants=category==="all"?[]:categoryData.filter(c=>{let id=c.id,seen=new Set();while(id&&!seen.has(id)){if(id===category)return true;seen.add(id);id=categoryData.find(x=>x.id===id)?.parentId||null;}return false;}).map(c=>c.id);
+  const descendants=category==="all"?[]:[category,...categoryData.filter(c=>{let id=c.id,seen=new Set();while(id&&!seen.has(id)){if(id===category)return true;seen.add(id);id=categoryData.find(x=>x.id===id)?.parentId||null;}return false;}).map(c=>c.id)];
   const matchCategory=category==="all"||(p.categoryIds||[p.category]).some(id=>descendants.includes(id));
   const matchSearch=(p.title+" "+p.description+" "+(label[p.category]||"")+(p.categoryIds||[]).map(id=>label[id]||"").join(" ")).toLocaleLowerCase("fa").includes(query.toLocaleLowerCase("fa"));
   return matchCategory&&matchSearch;
