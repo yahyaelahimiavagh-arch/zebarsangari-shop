@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#f7f5f6"><title>استودیو مدیریت | زبرسنگری</title><link rel="stylesheet" href="/studio.css"></head>
+<body>
+<header class="topbar"><a href="/" class="brand"><span class="brand-icon">♡</span><span>زبرسنگری <small>STORE STUDIO</small></span></a><div class="header-links"><a href="/manage.html">مدیریت قدیمی محصولات</a><a href="/" target="_blank" rel="noopener">مشاهده فروشگاه ↗</a><button id="logout" class="outline" hidden>خروج</button></div></header>
+<main class="app">
+<section id="loginView" class="login-box">
+<div class="icon-large">✧</div><p class="eyebrow">ZEBAR SANGARI / ADMIN</p><h1>ورود به استودیوی فروشگاه</h1>
+<p class="muted">برای مدیریت دسته‌ها، چیدمان و اولویت محصولات از همان رمز مدیریت فعلی استفاده کن.</p>
+<form id="loginForm"><label>رمز مدیریت <input type="password" id="password" autocomplete="current-password" minlength="1" required></label><button type="submit" class="primary wide" id="loginButton">ورود امن به پنل</button></form>
+<p class="hint">این پنل از ورود امن قبلی استفاده می‌کند و رمز را در مرورگر ذخیره نمی‌کند.</p>
+</section>
+<div id="workspace" hidden>
+<div id="setupWarning" class="card" hidden style="margin-bottom:22px;border-color:#dfbac5;background:#fff9fa">
+<strong>آماده‌سازی اولیه دیتابیس لازم است</strong>
+<p class="muted">فایل <code dir="ltr">migrations/0005_store_studio.sql</code> را در Cloudflare D1 Console اجرا کن، سپس این صفحه را تازه‌سازی کن. محصولات و سفارش‌های قبلی حذف نمی‌شوند.</p>
+</div>
+<div class="welcome"><div><p class="eyebrow">CONTROL YOUR STORE</p><h1>مدیریت ویترین زبرسنگری</h1><p class="muted">دسته‌بندی، ترتیب محصولات و نمایش بخش‌های صفحه اصلی را خودت تعیین کن.</p></div><span class="status">● پنل مدیریت</span></div>
+<div class="summary-row"><div class="stat"><span>دسته‌بندی‌ها</span><b id="categoryCount">—</b></div><div class="stat"><span>کل محصولات</span><b id="productCount">—</b></div><div class="stat"><span>محصولات ویژه</span><b id="featuredCount">—</b></div></div>
+<nav class="tabs" aria-label="بخش‌های پنل">
+<button class="tab active" data-tab="categories" aria-current="page">دسته‌بندی‌ها</button>
+<button class="tab" data-tab="products">چیدمان محصولات</button>
+<button class="tab" data-tab="homepage">صفحه اصلی</button>
+<a class="tab extra" href="/manage.html">افزودن و ویرایش کالا ↗</a>
+</nav>
+<section id="tab-categories" class="tab-panel">
+<div class="section-title"><div><h2>دسته‌بندی‌های فروشگاه</h2><p>دسته و زیردسته بساز، آن‌ها را جابه‌جا کن یا نمایششان را کنترل کن.</p></div><button class="outline" id="reloadCategories">بروزرسانی</button></div>
+<div class="columns">
+<div class="card"><div class="card-heading"><h3>ساختار دسته‌بندی‌ها</h3><span class="hint">کشیدن در دسکتاپ / فلش در موبایل</span></div><div id="categoryList" class="sortable-list"></div></div>
+<div class="card"><h3>افزودن دسته جدید</h3><form id="createCategory"><label>نام دسته<input id="newCatName" maxlength="64" placeholder="مثلاً سوتین" required></label><label>زیرمجموعه <select id="newCatParent"><option value="">دسته اصلی</option></select></label><button class="primary" type="submit" id="addCategory">ساخت دسته</button></form><hr><h3>ویرایش دسته</h3><form id="editCategory"><label>دسته انتخابی<input id="editCatName" maxlength="64" placeholder="ابتدا یک دسته را انتخاب کن" required disabled></label><label>زیرمجموعه <select id="editCatParent" disabled></select></label><label class="check"><input id="editCatVisible" type="checkbox" disabled> در ویترین نمایش داده شود</label><div class="actions"><button type="submit" class="primary" id="saveCategory" disabled>ذخیره تغییرات</button><button type="button" class="danger" id="deleteCategory" disabled>حذف</button></div></form><p class="hint">حذف فقط برای دسته‌ای ممکن است که زیردسته و محصول نداشته باشد.</p></div>
+</div>
+</section>
+<section id="tab-products" class="tab-panel" hidden>
+<div class="section-title"><div><h2>چیدمان و اولویت محصولات</h2><p>ترتیب را با دکمه‌ها یا Drag & Drop تغییر بده. دسته‌های هر کالا را جداگانه تعیین کن.</p></div><a class="outline" href="/manage.html">افزودن محصول جدید ↗</a></div>
+<div class="columns products-columns">
+<div class="card"><div class="row-between"><h3>ترتیب نمایش</h3><input type="search" id="searchProducts" placeholder="جست‌وجوی نام محصول"></div><div id="productList" class="sortable-list"></div><p class="hint">ترتیب تغییرات بلافاصله بعد از جابه‌جایی ذخیره می‌شود. جابه‌جایی هنگام جست‌وجو غیرفعال است.</p></div>
+<div class="card sticky-card"><h3>تنظیمات محصول انتخابی</h3><p id="selectedProductName" class="muted">یک محصول از لیست انتخاب کن.</p><form id="productForm"><label class="check featured"><input id="productFeatured" type="checkbox" disabled> نمایش به‌عنوان محصول ویژه</label><p class="micro-title">نمایش محصول در دسته‌بندی‌ها</p><div id="productCategories" class="checkbox-list"></div><button class="primary wide" type="submit" id="saveProduct" disabled>ذخیره دسته‌ها و وضعیت ویژه</button></form><p class="hint">سایز، رنگ، موجودی و تصویر را از «مدیریت محصولات» قبلی ویرایش کن.</p></div>
+</div>
+</section>
+<section id="tab-homepage" class="tab-panel" hidden>
+<div class="section-title"><div><h2>چیدمان صفحه اصلی</h2><p>ترتیب بخش‌ها را عوض کن و هر بخش را فعال یا پنهان کن. بنر اصلی همیشه بالای صفحه می‌ماند.</p></div><button class="primary" id="saveLayout">انتشار چیدمان</button></div>
+<div class="card narrow"><div id="layoutList" class="sortable-list"></div><p class="hint">تغییرات این بخش بعد از فشردن «انتشار چیدمان» روی فروشگاه اعمال می‌شوند.</p></div>
+</section>
+</div>
+<div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+</main>
+<script src="/studio.js" defer></script>
+</body></html>

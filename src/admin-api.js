@@ -1,4 +1,5 @@
 import {handleAdminCheckout} from "./checkout.js";
+import {handleStudioAdmin} from "./store-studio.js";
 // Secure single-owner catalog administration for Cloudflare Workers.
 // Production activation requires ADMIN_PASSWORD and SESSION_SECRET (Worker secrets),
 // the D1 login-attempts migration, and an optional IMAGES KV namespace.
@@ -142,9 +143,11 @@ async function listProducts(env,offset) {
 async function insertProduct(env,data,id=null) {
   const p=validateProduct(data);
   const editing=Boolean(id);
+  let previousCategory=null;
   if(editing) {
-    const exists=await env.DB.prepare("SELECT id FROM products WHERE id=?").bind(id).first();
+    const exists=await env.DB.prepare("SELECT id,category FROM products WHERE id=?").bind(id).first();
     if(!exists) return respond({error:"not_found"},404);
+    previousCategory=exists.category;
   } else id=crypto.randomUUID();
   const stmts=[];
   if(editing) {
@@ -158,6 +161,18 @@ async function insertProduct(env,data,id=null) {
   for(const v of p.variants) stmts.push(env.DB.prepare("INSERT INTO product_variants(id,product_id,size_label,color_label,stock) VALUES(?,?,?,?,?)")
     .bind(v.id,id,v.size,v.color,v.stock));
   await env.DB.batch(stmts);
+  // Keep legacy editor compatible with Store Studio membership (when migration exists).
+  try {
+    const available=await env.DB.prepare("SELECT id FROM shop_categories WHERE id=?").bind(p.category).first();
+    if(available && (!editing || previousCategory!==p.category)) {
+      const sync=[];
+      if(editing && previousCategory)sync.push(env.DB.prepare("DELETE FROM shop_product_categories WHERE product_id=? AND category_id=?").bind(id,previousCategory));
+      sync.push(env.DB.prepare("INSERT OR IGNORE INTO shop_product_categories(product_id,category_id) VALUES(?,?)").bind(id,p.category));
+      await env.DB.batch(sync);
+    }
+  }catch(error){
+    if(!String(error?.message||"").includes("no such table"))throw error;
+  }
   return respond({ok:true,id},editing?200:201);
 }
 function mimeFromBytes(bytes) {
@@ -240,6 +255,10 @@ export async function handleAdmin(request,env) {
   if(path==="/api/admin/orders" || path.startsWith("/api/admin/orders/") || path==="/api/admin/shop-settings"){
     if(method!=="GET" && !requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
     return handleAdminCheckout(request,env);
+  }
+  if(path.startsWith("/api/admin/studio/")){
+    if(method!=="GET" && !requireCsrf(request,session))return respond({error:"invalid_csrf"},403);
+    return handleStudioAdmin(request,env);
   }
   if(!requireCsrf(request,session)) return respond({error:"invalid_csrf"},403);
   if(path==="/api/admin/logout" && method==="POST")
