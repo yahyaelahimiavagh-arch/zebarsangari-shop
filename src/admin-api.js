@@ -10,6 +10,7 @@ const JSON_HEADERS = {
   "x-content-type-options": "nosniff"
 };
 const CATEGORIES = new Set(["women","men","kids","socks","accessories"]);
+const CATEGORY_ID = /^(?:[a-z][a-z0-9_-]{1,40}|[a-f0-9-]{36})$/i;
 const encoder = new TextEncoder();
 const respond = (data, status=200, extra={}) =>
   new Response(JSON.stringify(data), {status, headers:{...JSON_HEADERS,...extra}});
@@ -72,6 +73,11 @@ function validateProduct(input) {
   const title=bounded(input.title,180);
   const description=bounded(input.description,4000);
   const category=input.category;
+  const studioCategories=input.categoryIds===undefined?null:input.categoryIds;
+  const featured=input.featured===undefined?null:input.featured;
+  if(studioCategories!==null && (!Array.isArray(studioCategories) || studioCategories.length<1 || studioCategories.length>12 || new Set(studioCategories).size!==studioCategories.length || studioCategories.some(id=>typeof id!=="string"||!CATEGORY_ID.test(id)) || !studioCategories.includes(category)))
+    throw new Error("invalid_categories");
+  if(featured!==null && typeof featured!=="boolean")throw new Error("invalid_featured");
   const price=int(input.priceToman,0,10000000000);
   const compare=input.compareAtToman===null || input.compareAtToman==="" || input.compareAtToman===undefined
     ? null : int(input.compareAtToman,0,10000000000);
@@ -87,7 +93,7 @@ function validateProduct(input) {
     if(seen.has(key)) throw new Error("duplicate_variant");
     seen.add(key); variants.push({id:crypto.randomUUID(),size,color,stock});
   }
-  return {title,description,category,price,compare,active:input.active===true,variants};
+  return {title,description,category,price,compare,active:input.active===true,variants,categoryIds:studioCategories,featured};
 }
 async function ownerIpKey(request,secret) {
   const addr=request.headers.get("CF-Connecting-IP")||"unknown";
@@ -144,26 +150,48 @@ async function insertProduct(env,data,id=null) {
   const p=validateProduct(data);
   const editing=Boolean(id);
   let previousCategory=null;
+  const oldVariants=editing ? (await env.DB.prepare("SELECT id,size_label,color_label FROM product_variants WHERE product_id=?").bind(id).all()).results||[] : [];
   if(editing) {
     const exists=await env.DB.prepare("SELECT id,category FROM products WHERE id=?").bind(id).first();
     if(!exists) return respond({error:"not_found"},404);
     previousCategory=exists.category;
   } else id=crypto.randomUUID();
+  // Studio's primary category and secondary categories must exist and match.
+  if(p.categoryIds){
+    const slots=p.categoryIds.map(()=>"?").join(",");
+    const found=await env.DB.prepare("SELECT id FROM shop_categories WHERE id IN ("+slots+")").bind(...p.categoryIds).all();
+    if((found.results||[]).length!==p.categoryIds.length)throw new Error("invalid_categories");
+  }
   const stmts=[];
   if(editing) {
     stmts.push(env.DB.prepare("UPDATE products SET title_fa=?,description_fa=?,category=?,price_toman=?,compare_at_toman=?,active=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?")
       .bind(p.title,p.description,p.category,p.price,p.compare,p.active?1:0,id));
-    stmts.push(env.DB.prepare("DELETE FROM product_variants WHERE product_id=?").bind(id));
   } else {
     stmts.push(env.DB.prepare("INSERT INTO products(id,slug,title_fa,description_fa,category,price_toman,compare_at_toman,active) VALUES(?,?,?,?,?,?,?,?)")
       .bind(id,"p-"+id,p.title,p.description,p.category,p.price,p.compare,p.active?1:0));
   }
-  for(const v of p.variants) stmts.push(env.DB.prepare("INSERT INTO product_variants(id,product_id,size_label,color_label,stock) VALUES(?,?,?,?,?)")
-    .bind(v.id,id,v.size,v.color,v.stock));
+  const oldByLabel=new Map(oldVariants.map(v=>[JSON.stringify([v.size_label,v.color_label]),v.id]));
+  const kept=new Set();
+  for(const v of p.variants){
+    const existing=oldByLabel.get(JSON.stringify([v.size,v.color]));
+    if(existing){
+      kept.add(existing);
+      stmts.push(env.DB.prepare("UPDATE product_variants SET stock=?,active=1 WHERE id=? AND product_id=?").bind(v.stock,existing,id));
+    }else{
+      stmts.push(env.DB.prepare("INSERT INTO product_variants(id,product_id,size_label,color_label,stock) VALUES(?,?,?,?,?)").bind(v.id,id,v.size,v.color,v.stock));
+    }
+  }
+  for(const old of oldVariants)if(!kept.has(old.id))stmts.push(env.DB.prepare("DELETE FROM product_variants WHERE id=? AND product_id=?").bind(old.id,id));
+  if(p.categoryIds){
+    stmts.push(env.DB.prepare("DELETE FROM shop_product_categories WHERE product_id=?").bind(id));
+    for(const categoryId of p.categoryIds)
+      stmts.push(env.DB.prepare("INSERT INTO shop_product_categories(product_id,category_id) VALUES(?,?)").bind(id,categoryId));
+    stmts.push(env.DB.prepare("INSERT INTO shop_product_display(product_id,sort_order,featured) VALUES(?,1000,?) ON CONFLICT(product_id) DO UPDATE SET featured=excluded.featured").bind(id,p.featured?1:0));
+  }
   await env.DB.batch(stmts);
-  // Keep legacy editor compatible with Store Studio membership (when migration exists).
+  // Keep the original product editor compatible with Studio membership (when no Studio categories supplied).
   try {
-    const available=await env.DB.prepare("SELECT id FROM shop_categories WHERE id=?").bind(p.category).first();
+    const available=!p.categoryIds&&await env.DB.prepare("SELECT id FROM shop_categories WHERE id=?").bind(p.category).first();
     if(available && (!editing || previousCategory!==p.category)) {
       const sync=[];
       if(editing && previousCategory)sync.push(env.DB.prepare("DELETE FROM shop_product_categories WHERE product_id=? AND category_id=?").bind(id,previousCategory));
@@ -265,12 +293,12 @@ export async function handleAdmin(request,env) {
     return respond({ok:true},200,{"set-cookie":cookieString("",0)});
   if(path==="/api/admin/products" && method==="POST") {
     try {return await insertProduct(env,await readJson(request));}
-    catch(err) {return respond({error:["invalid_product","invalid_variants","invalid_variant","duplicate_variant","invalid_content_type","payload_too_large"].includes(err.message)?err.message:"failed_to_save"},400);}
+    catch(err) {return respond({error:["invalid_product","invalid_variants","invalid_variant","duplicate_variant","invalid_categories","invalid_featured","invalid_content_type","payload_too_large"].includes(err.message)?err.message:"failed_to_save"},400);}
   }
   const match=path.match(/^\/api\/admin\/products\/([a-f0-9-]{36})$/);
   if(match && method==="PUT") {
     try {return await insertProduct(env,await readJson(request),match[1]);}
-    catch(err) {return respond({error:["invalid_product","invalid_variants","invalid_variant","duplicate_variant"].includes(err.message)?err.message:"failed_to_save"},400);}
+    catch(err) {return respond({error:["invalid_product","invalid_variants","invalid_variant","duplicate_variant","invalid_categories","invalid_featured"].includes(err.message)?err.message:"failed_to_save"},400);}
   }
   if(match && method==="DELETE") {
     await env.DB.prepare("UPDATE products SET active=0,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").bind(match[1]).run();
@@ -278,6 +306,20 @@ export async function handleAdmin(request,env) {
   }
   const img=path.match(/^\/api\/admin\/products\/([a-f0-9-]{36})\/images$/);
   if(img && method==="POST") return uploadImage(request,env,img[1]);
+  // Reorder gallery images; the first photo is the storefront cover.
+  const imageOrder=path.match(/^\/api\/admin\/products\/([a-f0-9-]{36})\/images\/order$/);
+  if(imageOrder && method==="PUT"){
+    let body;
+    try{body=await readJson(request);}catch{return respond({error:"invalid_request"},400);}
+    const ids=body?.ids;
+    if(!Array.isArray(ids)||ids.length>10||new Set(ids).size!==ids.length||ids.some(x=>typeof x!=="string"||!/^[a-f0-9-]{36}$/i.test(x)))
+      return respond({error:"invalid_image_order"},400);
+    const rows=await env.DB.prepare("SELECT id FROM product_images WHERE product_id=?").bind(imageOrder[1]).all();
+    const own=(rows.results||[]).map(x=>x.id);
+    if(ids.length!==own.length||own.some(x=>!ids.includes(x)))return respond({error:"invalid_image_order"},409);
+    if(ids.length)await env.DB.batch(ids.map((id,i)=>env.DB.prepare("UPDATE product_images SET position=? WHERE id=? AND product_id=?").bind(i,id,imageOrder[1])));
+    return respond({ok:true});
+  }
   const deleteImage=path.match(/^\/api\/admin\/images\/([a-f0-9-]{36})$/);
   if(deleteImage && method==="DELETE") {
     const row=await env.DB.prepare("SELECT object_key FROM product_images WHERE id=?").bind(deleteImage[1]).first();

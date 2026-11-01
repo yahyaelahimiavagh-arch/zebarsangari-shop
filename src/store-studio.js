@@ -31,6 +31,7 @@ function validateParent(cats,id,parentId){
 async function listProducts(db){
  const rows=await db.prepare(
   "SELECT p.id,p.title_fa AS title,p.category,p.active,p.price_toman AS priceToman,"+
+  "(SELECT object_key FROM product_images i WHERE i.product_id=p.id ORDER BY position,id LIMIT 1) AS imageKey,"+
   "COALESCE(d.sort_order,1000) AS sortOrder,COALESCE(d.featured,0) AS featured "+
   "FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC LIMIT 300"
  ).all();
@@ -96,6 +97,24 @@ async function work(req,env){
   if(stmts.length)await db.batch(stmts);return out({ok:true});
  }
  if(path==="/api/admin/studio/products"&&method==="GET")return out({products:await listProducts(db)});
+ const detail=path.match(/^\/api\/admin\/studio\/product-details\/([a-f0-9-]{36})$/);
+ if(detail && method==="GET"){
+  const id=detail[1];
+  const p=await db.prepare(
+   "SELECT p.id,p.title_fa AS title,p.description_fa AS description,p.category,p.price_toman AS priceToman,p.compare_at_toman AS compareAtToman,p.active,COALESCE(d.featured,0) AS featured,COALESCE(d.sort_order,1000) AS sortOrder FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id WHERE p.id=?"
+  ).bind(id).first();
+  if(!p)return out({error:"not_found"},404);
+  const [v,im,links]=await Promise.all([
+   db.prepare("SELECT id,size_label AS size,color_label AS color,stock FROM product_variants WHERE product_id=? ORDER BY size_label,color_label").bind(id).all(),
+   db.prepare("SELECT id,object_key AS objectKey,alt_fa AS alt,position FROM product_images WHERE product_id=? ORDER BY position,id").bind(id).all(),
+   db.prepare("SELECT category_id FROM shop_product_categories WHERE product_id=?").bind(id).all()
+  ]);
+  return out({product:{...p,active:Boolean(p.active),featured:Boolean(p.featured),
+   variants:v.results||[],images:(im.results||[]).map(x=>({...x,url:"/media/"+x.objectKey})),
+   categoryIds:(links.results||[]).map(x=>x.category_id).length?(links.results||[]).map(x=>x.category_id):[p.category]
+  }});
+ }
+
  const pMatch=path.match(/^\/api\/admin\/studio\/products\/([a-f0-9-]{36})$/);
  if(pMatch&&method==="PATCH"){
   const id=pMatch[1],d=await dataJSON(req),cats=await allCategories(db);
