@@ -288,9 +288,11 @@ function catalogCategoryOptions(primary="",memberships=[]){
  const main=$("itemMainCategory"),box=$("itemCategoryChoices");
  main.replaceChildren();box.replaceChildren();
  const all=tree(),selected=new Set(memberships);
+ const legacy=new Set(["women","men","kids","socks","accessories"]);
  for(const c of all){
-  const option=document.createElement("option");option.value=c.id;
-  option.textContent="— ".repeat(c.depth)+c.name;main.append(option);
+  if(legacy.has(c.id)){
+   const option=document.createElement("option");option.value=c.id;option.textContent=c.name;main.append(option);
+  }
   const label=document.createElement("label");label.className="check";
   label.style.paddingInlineStart=Math.min(c.depth,4)*12+"px";
   const cb=document.createElement("input");cb.type="checkbox";cb.value=c.id;cb.checked=selected.has(c.id);cb.className="item-category";
@@ -301,7 +303,7 @@ function catalogCategoryOptions(primary="",memberships=[]){
   const note=document.createElement("p");note.className="hint";
   note.textContent="ابتدا از بخش دسته‌بندی‌ها یک دسته ایجاد کن.";box.append(note);
  }
- main.value=all.some(c=>c.id===primary)?primary:(all[0]?.id||"");
+ main.value=legacy.has(primary)?primary:(main.options[0]?.value||"");
  ensurePrimaryMembership();
 }
 function ensurePrimaryMembership(){
