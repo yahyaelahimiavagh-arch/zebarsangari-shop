@@ -15,7 +15,7 @@ test("storefront collects all catalog pages",async()=>{
   return cursor===null?{products:[row("a"),row("b")],nextCursor:"next"}:
    {products:[row("c")],nextCursor:null};
  });
- assert.deepEqual(products.map(p=>p.id),["a","b","c"]);
+ assert.deepEqual(Array.from(products,p=>p.id),["a","b","c"]);
  assert.deepEqual(requests,[null,"next"]);
 });
 test("checkout stops after all cart product ids are resolved",async()=>{
@@ -26,7 +26,7 @@ test("checkout stops after all cart product ids are resolved",async()=>{
    {products:[row("c")],nextCursor:null};
  },["b"]);
  assert.equal(calls,1);
- assert.deepEqual(products.map(p=>p.id),["a","b"]);
+ assert.deepEqual(Array.from(products,p=>p.id),["a","b"]);
 });
 test("checkout continues when a cart id is on a later page",async()=>{
  let calls=0;
@@ -36,7 +36,7 @@ test("checkout continues when a cart id is on a later page",async()=>{
    {products:[row("b")],nextCursor:null};
  },["b"]);
  assert.equal(calls,2);
- assert.deepEqual(products.map(p=>p.id),["a","b"]);
+ assert.deepEqual(Array.from(products,p=>p.id),["a","b"]);
 });
 test("loader rejects repeated products and cyclical cursors",async()=>{
  await assert.rejects(()=>load(async cursor=>cursor===null?
