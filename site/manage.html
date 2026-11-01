@@ -118,7 +118,7 @@ footer{text-align:center;padding:20px;color:#7b6b6a;font-size:12px}
 </div>
 <p class="muted">مشتری تصویر رسید را در پیام‌رسان می‌فرستد. قبل از تأیید پرداخت، واریز را در حساب بانکی بررسی کن.</p>
 <form id="ordersFilterForm" class="orders-filters" autocomplete="off">
-<label>جست‌وجوی سفارش<input type="search" id="ordersSearch" maxlength="22" placeholder="کد سفارش، نام یا شماره تلفن"></label>
+<label>جست‌وجوی سفارش<input type="search" id="ordersSearch" maxlength="60" placeholder="کد سفارش، نام یا شماره تلفن"></label>
 <label>وضعیت
 <select id="ordersStatus">
 <option value="">همه وضعیت‌ها</option>
@@ -184,7 +184,10 @@ async function api(path,opts={}) {
    configure_contact_first:"برای فعال کردن سفارش، حداقل یکی از روش‌های واتساپ، تلگرام یا کارت‌به‌کارت را تنظیم کن.",
    invalid_bale_phone:"شماره تلفن بله معتبر نیست.",
    invalid_bale_username:"شناسه بله باید حداقل ۵ کاراکتر انگلیسی داشته باشد.",
-   bale_settings_migration_required:"جدول تنظیمات بله هنوز در D1 ساخته نشده است."
+   bale_settings_migration_required:"جدول تنظیمات بله هنوز در D1 ساخته نشده است.",
+   search_too_long:"عبارت جست‌وجو طولانی است؛ کوتاه‌تر بنویس.",
+   invalid_cursor:"نشانی صفحه سفارش‌ها نامعتبر است؛ فهرست را تازه‌سازی کن.",
+   invalid_page_size:"تعداد سفارش‌ها در صفحه معتبر نیست."
   };
   if(labels[data.error])throw Error(labels[data.error]);
   throw Error(data.error||"خطای سرور ("+response.status+")");
