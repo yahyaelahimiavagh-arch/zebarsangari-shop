@@ -183,7 +183,7 @@ function renderProducts(){
  const visible=all.filter(p=>p.title.toLocaleLowerCase("fa").includes(query));
  const chosen=products.find(p=>p.id===selectedProduct);
  $("productFeatured").disabled=!chosen;$("saveProduct").disabled=!chosen;$("editFullProduct").disabled=!chosen;
- $("selectedProductName").textContent=chosen?chosen.title:"یک محصول را انتخاب کن.";
+ $("selectedProductName").textContent=chosen?chosen.title+" · "+window.ZebarProductCode.fromId(chosen.id):"یک محصول را انتخاب کن.";
  $("productFeatured").checked=Boolean(chosen?.featured);
  const categoriesBox=$("productCategories");categoriesBox.replaceChildren();
  for(const c of tree()){
@@ -200,7 +200,7 @@ function renderProducts(){
   }
   const title=document.createElement("span");title.className="row-title";title.textContent=p.title;
   if(p.featured){const badge=document.createElement("span");badge.className="badge";badge.textContent="ویژه";title.append(badge);}
-  const meta=document.createElement("span");meta.className="row-meta";meta.textContent=fa(p.priceToman)+" تومان · "+fa(p.categoryIds?.length||0)+" دسته"+(p.active?"":" · غیرفعال");
+  const meta=document.createElement("span");meta.className="row-meta";meta.textContent="کد: "+window.ZebarProductCode.fromId(p.id)+" · "+fa(p.priceToman)+" تومان · "+fa(p.categoryIds?.length||0)+" دسته"+(p.active?"":" · غیرفعال");
   content.append(title,meta);const i=all.findIndex(x=>x.id===p.id);
   action.append(
    makeButton("↑","رتبه بالاتر",()=>moveProduct(p.id,-1),Boolean(query)||i===0),
@@ -383,7 +383,7 @@ async function loadCatalogDetail(id,navigate=true){
  const response=await api("/api/admin/studio/product-details/"+id);
  const p=response.product;if(!p)throw Error("محصول پیدا نشد.");
  editingCatalogId=p.id;catalogDetail=p;selectedProduct=p.id;
- $("catalogEditorTitle").textContent="ویرایش: "+p.title;
+ $("catalogEditorTitle").textContent="ویرایش: "+p.title+" | "+window.ZebarProductCode.fromId(p.id);
  $("itemTitle").value=p.title;$("itemDescription").value=p.description||"";
  $("itemPrice").value=p.priceToman;$("itemOldPrice").value=p.compareAtToman??"";
  $("itemActive").checked=p.active;$("itemFeatured").checked=p.featured;
