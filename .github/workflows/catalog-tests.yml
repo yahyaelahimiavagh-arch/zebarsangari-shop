@@ -23,5 +23,9 @@ jobs:
           node --check site/storefront.js
           node --check site/checkout.js
           node --check site/studio.js
+          node --check scripts/backup-cloudflare.mjs
+          node --check scripts/verify-backup.mjs
+      - name: Backup tooling dry-run (no credentials)
+        run: node scripts/backup-cloudflare.mjs --dry-run
       - name: Test catalog query boundaries
         run: node --test tests/catalog.test.mjs
