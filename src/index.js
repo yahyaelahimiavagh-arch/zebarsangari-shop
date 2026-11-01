@@ -1,5 +1,6 @@
 import {handleAdmin, serveMedia} from "./admin-api.js";
 import {handlePublicCheckout} from "./checkout.js";
+import {handleStudioPublic} from "./store-studio.js";
 // Worker entry point: static storefront + read-only catalog API. No checkout/admin writes.
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -10,46 +11,46 @@ const JSON_HEADERS = {
 const response = (body, status = 200) =>
   new Response(JSON.stringify(body), {status, headers: JSON_HEADERS});
 
-const CATEGORY_SET = new Set(["women", "men", "kids", "socks", "accessories"]);
-
-async function catalog(env, category) {
-  const selected = CATEGORY_SET.has(category) ? category : null;
-  const query = selected
-    ? "SELECT id, slug, title_fa, description_fa, category, price_toman, compare_at_toman, created_at FROM products WHERE active = 1 AND category = ? ORDER BY created_at DESC LIMIT 48"
-    : "SELECT id, slug, title_fa, description_fa, category, price_toman, compare_at_toman, created_at FROM products WHERE active = 1 ORDER BY created_at DESC LIMIT 48";
-  const result = selected
-    ? await env.DB.prepare(query).bind(selected).all()
-    : await env.DB.prepare(query).all();
-  const products = result.results || [];
-  if (!products.length) return response({products: [], count: 0});
-
-  const ids = products.map(p => p.id);
-  const placeholders = ids.map(() => "?").join(",");
-  const [variantRows, imageRows] = await Promise.all([
-    env.DB.prepare(`SELECT id, product_id, sku, size_label, color_label, stock
-      FROM product_variants WHERE active = 1 AND product_id IN (${placeholders})
-      ORDER BY product_id, size_label, color_label`).bind(...ids).all(),
-    env.DB.prepare(`SELECT id, product_id, object_key, alt_fa, position
-      FROM product_images WHERE product_id IN (${placeholders})
-      ORDER BY product_id, position`).bind(...ids).all()
-  ]);
-  const variantsById = new Map(ids.map(id => [id, []]));
-  for (const v of (variantRows.results || [])) variantsById.get(v.product_id)?.push({
-    id: v.id, sku: v.sku, size: v.size_label, color: v.color_label, stock: v.stock
-  });
-  const imagesById = new Map(ids.map(id => [id, []]));
-  for (const im of (imageRows.results || [])) imagesById.get(im.product_id)?.push({
-    id: im.id, key: im.object_key, alt: im.alt_fa, position: im.position
-  });
-  return response({
-    count: products.length,
-    products: products.map(p => ({
-      id: p.id, slug: p.slug, title: p.title_fa, description: p.description_fa,
-      category: p.category, priceToman: p.price_toman,
-      compareAtToman: p.compare_at_toman,
-      variants: variantsById.get(p.id), images: imagesById.get(p.id)
-    }))
-  });
+const LEGACY_CATEGORIES=new Set(["women","men","kids","socks","accessories"]);
+const SAFE_CATEGORY=/^(?:[a-z][a-z0-9_-]{1,40}|[a-f0-9-]{36})$/;
+async function catalog(env, category){
+  const selected=typeof category==="string"&&SAFE_CATEGORY.test(category)?category:null;
+  let q,enhanced=true;
+  try{
+    const sql="SELECT p.id,p.slug,p.title_fa,p.description_fa,p.category,p.price_toman,p.compare_at_toman,p.created_at,"+
+      "COALESCE(d.sort_order,1000) AS sort_order,COALESCE(d.featured,0) AS featured "+
+      "FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id WHERE p.active=1 "+
+      (selected?"AND (p.category=? OR EXISTS(SELECT 1 FROM shop_product_categories m WHERE m.product_id=p.id AND m.category_id=?)) ":"")+
+      "ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC LIMIT 150";
+    q=selected?await env.DB.prepare(sql).bind(selected,selected).all():await env.DB.prepare(sql).all();
+  }catch(err){
+    if(!String(err?.message||"").includes("no such table"))throw err;
+    enhanced=false;
+    const legacy=selected&&LEGACY_CATEGORIES.has(selected)?selected:null;
+    const sql="SELECT id,slug,title_fa,description_fa,category,price_toman,compare_at_toman,created_at FROM products WHERE active=1 "+
+      (legacy?"AND category=? ":"")+"ORDER BY created_at DESC LIMIT 150";
+    q=legacy?await env.DB.prepare(sql).bind(legacy).all():await env.DB.prepare(sql).all();
+  }
+  const products=q.results||[];
+  if(!products.length)return response({products:[],count:0});
+  const ids=products.map(p=>p.id),slots=ids.map(()=>"?").join(",");
+  const requests=[
+    env.DB.prepare("SELECT id,product_id,sku,size_label,color_label,stock FROM product_variants WHERE active=1 AND product_id IN ("+slots+") ORDER BY product_id,size_label,color_label").bind(...ids).all(),
+    env.DB.prepare("SELECT id,product_id,object_key,alt_fa,position FROM product_images WHERE product_id IN ("+slots+") ORDER BY product_id,position").bind(...ids).all()
+  ];
+  if(enhanced)requests.push(env.DB.prepare("SELECT product_id,category_id FROM shop_product_categories WHERE product_id IN ("+slots+")").bind(...ids).all());
+  const rows=await Promise.all(requests);
+  const variants=new Map(ids.map(id=>[id,[]])),images=new Map(ids.map(id=>[id,[]])),cats=new Map(ids.map(id=>[id,[]]));
+  for(const v of rows[0].results||[])variants.get(v.product_id)?.push({id:v.id,sku:v.sku,size:v.size_label,color:v.color_label,stock:v.stock});
+  for(const im of rows[1].results||[])images.get(im.product_id)?.push({id:im.id,key:im.object_key,alt:im.alt_fa,position:im.position});
+  if(enhanced)for(const c of rows[2].results||[])cats.get(c.product_id)?.push(c.category_id);
+  return response({count:products.length,products:products.map(p=>({
+    id:p.id,slug:p.slug,title:p.title_fa,description:p.description_fa,category:p.category,
+    categoryIds:cats.get(p.id)?.length?cats.get(p.id):[p.category],
+    sortOrder:p.sort_order??1000,featured:!!p.featured,
+    priceToman:p.price_toman,compareAtToman:p.compare_at_toman,
+    variants:variants.get(p.id),images:images.get(p.id)
+  }))});
 }
 
 export default {
@@ -57,7 +58,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/media/")) return serveMedia(request,env);
     if (url.pathname === "/admin.html") return Response.redirect(new URL("/manage.html",request.url),302);
-    if (url.pathname === "/manage.html") {
+    if (url.pathname === "/manage.html" || url.pathname === "/studio.html") {
       const asset=await env.ASSETS.fetch(request);
       const headers=new Headers(asset.headers);
       headers.set("cache-control","no-store");
@@ -68,6 +69,7 @@ export default {
       return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
     }
     if (url.pathname.startsWith("/api/admin/")) return handleAdmin(request,env);
+    if (url.pathname === "/api/store-layout" && request.method==="GET") return handleStudioPublic(request,env);
     if (url.pathname === "/api/shop-settings" || url.pathname === "/api/orders" || /^\/api\/orders\/[a-f0-9-]{36}\/receipt$/.test(url.pathname)) return handlePublicCheckout(request,env);
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
