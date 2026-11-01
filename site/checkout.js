@@ -91,7 +91,7 @@ function renderSummary(){
   const row=document.createElement("div");row.className="item";
   const info=document.createElement("div");
   const title=document.createElement("b");title.textContent=item.title;
-  const sub=document.createElement("small");sub.textContent="سایز "+item.size+" · "+item.color+" · "+item.qty.toLocaleString("fa-IR")+" عدد";
+  const sub=document.createElement("small");sub.textContent="کد "+window.ZebarProductCode.fromId(item.productId)+" · سایز "+item.size+" · "+item.color+" · "+item.qty.toLocaleString("fa-IR")+" عدد";
   info.append(title,sub);
   const price=document.createElement("span");price.className="price";price.textContent=money(item.price*item.qty);
   row.append(info,price);$("cartLines").append(row);
@@ -135,7 +135,7 @@ $("detailsForm").addEventListener("submit",event=>{
  if(!validateForm())return;
  const d=details();
  $("reviewAddress").textContent=d.buyerName+"\n"+d.buyerPhone+"\n"+d.city+"، "+d.address;
- $("reviewItems").textContent=items.map(i=>i.title+" — "+i.size+" / "+i.color+" × "+i.qty.toLocaleString("fa-IR")).join("\n");
+ $("reviewItems").textContent=items.map(i=>i.title+" ("+window.ZebarProductCode.fromId(i.productId)+") — "+i.size+" / "+i.color+" × "+i.qty.toLocaleString("fa-IR")).join("\n");
  $("reviewTotal").textContent=money(subtotal);
  showStep(2);
 });
@@ -175,7 +175,31 @@ async function copy(value,el){
   if(el)el.textContent="کپی شد ✓";return true;
  }catch{if(el)el.textContent="کپی نشد؛ متن را لمس طولانی و کپی کن.";return false;}
 }
-const summaryMessage=()=>"سلام، سفارش زبرسنگری با کد "+order.code+" ثبت کردم. جمع کالاها "+money(order.subtotalToman)+" است. لطفاً هزینه ارسال و مبلغ نهایی را اعلام کنید. رسید پرداخت را جداگانه ارسال می‌کنم.";
+const summaryMessage=()=>{
+ if(!order)return "";
+ const d=details();
+ const lines=items.map((item,i)=>
+  (i+1)+". "+item.title+" | کد کالا: "+window.ZebarProductCode.fromId(item.productId)+
+  " | سایز: "+item.size+" | رنگ: "+item.color+" | تعداد: "+item.qty.toLocaleString("fa-IR")+
+  " | جمع: "+money(item.price*item.qty)
+ );
+ return [
+  "سلام، سفارش من در فروشگاه زبرسنگری ثبت شد.",
+  "کد سفارش: "+order.code,
+  "نام: "+d.buyerName,
+  "تلفن: "+d.buyerPhone,
+  "شهر: "+d.city,
+  "نشانی: "+d.address,
+  "",
+  "اقلام سفارش:",
+  ...lines,
+  "",
+  "جمع کالاها: "+money(order.subtotalToman),
+  "هزینه ارسال: پس از هماهنگی",
+  "لطفاً مبلغ نهایی را تأیید کنید.",
+  "رسید پرداخت را در همین گفتگو جداگانه ارسال می‌کنم."
+ ].join("\n");
+};
 function addMessenger(label,url,iconText){
  const a=document.createElement("a");a.className="link";a.href=url;a.target="_blank";a.rel="noopener noreferrer";
  const icon=document.createElement("i");icon.textContent=iconText;
@@ -185,6 +209,19 @@ function addMessenger(label,url,iconText){
 }
 function renderComplete(){
  $("orderCode").textContent=order.code;
+ const timestamp=$("confirmedAt");
+ if(timestamp && order.createdAt){
+  const raw=String(order.createdAt).replace(" ","T");
+  const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw);
+  const when=new Date(hasZone?raw:raw+"Z");
+  if(!Number.isNaN(when.getTime())){
+   timestamp.textContent="زمان ثبت سفارش: "+new Intl.DateTimeFormat("fa-IR-u-ca-persian",{
+    timeZone:"Asia/Tehran",year:"numeric",month:"long",day:"numeric",
+    hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+   }).format(when)+" (ساعت ایران)";
+   timestamp.hidden=false;
+  }
+ }
  $("completeAmountValue").textContent=money(order.subtotalToman);
  if(settings.cardNumber){
   $("paymentCard").hidden=false;$("noCard").hidden=true;
@@ -194,13 +231,38 @@ function renderComplete(){
   $("bankName").textContent=b?b.name:"";
  }else{$("paymentCard").hidden=true;$("noCard").hidden=false;}
  $("messengerLinks").replaceChildren();
- if(settings.whatsapp)addMessenger("ارسال رسید از واتساپ","https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summaryMessage()),"و");
- if(settings.telegram)addMessenger("ارسال رسید از تلگرام","https://t.me/"+settings.telegram,"ت");
- if(settings.baleUsername)addMessenger("ارسال رسید از بله","https://ble.ir/"+settings.baleUsername,"ب");
- else if(settings.balePhone){
-  addMessenger("باز کردن بله","https://web.bale.ai/","ب");
-  $("baleHelp").hidden=false;
-  $("baleHelp").textContent="شماره بله فروشگاه: "+settings.balePhone+" — شماره را در بله جست‌وجو و رسید را ارسال کن.";
+ if(settings.whatsapp)addMessenger("ارسال متن سفارش از واتساپ","https://wa.me/"+settings.whatsapp+"?text="+encodeURIComponent(summaryMessage()),"و");
+ if(settings.telegram)addMessenger("ارسال متن سفارش از تلگرام","https://t.me/"+settings.telegram+"?text="+encodeURIComponent(summaryMessage()),"ت");
+ if(settings.baleUsername||settings.balePhone){
+  const button=document.createElement("button");button.type="button";button.className="link";
+  const ico=document.createElement("i");ico.textContent="ب";
+  const lbl=document.createElement("span");lbl.textContent="ارسال متن سفارش با بله";
+  const arrow=document.createElement("span");arrow.className="arrow";arrow.textContent="←";
+  button.append(ico,lbl,arrow);
+  button.addEventListener("click",async()=>{
+   const message=summaryMessage();
+   // Bale does not document a recipient-specific ?text draft link.
+   // Android Share Sheet can pass the composed text into a chosen Bale chat.
+   if(typeof navigator.share==="function"){
+    try{
+     await navigator.share({title:"سفارش زبرسنگری "+order.code,text:message});
+     $("messageFeedback").textContent="متن به صفحه اشتراک‌گذاری منتقل شد؛ در بله گفتگوی فروشگاه را انتخاب و ارسال کن.";
+     return;
+    }catch(err){if(err?.name==="AbortError")return;}
+   }
+   const copied=await copy(message,null);
+   if(copied){
+    $("messageFeedback").textContent="متن سفارش خودکار کپی شد؛ آن را در گفتگوی بله جای‌گذاری و ارسال کن.";
+    window.location.assign(settings.baleUsername?"https://ble.ir/"+settings.baleUsername:"https://web.bale.ai/");
+   }else{
+    $("messageFeedback").textContent="اشتراک‌گذاری خودکار در این مرورگر ممکن نیست؛ دکمه «کپی متن سفارش» را بزن.";
+   }
+  });
+  $("messengerLinks").append(button);
+  if(settings.balePhone&&!settings.baleUsername){
+   $("baleHelp").hidden=false;
+   $("baleHelp").textContent="در بله، شماره فروشگاه "+settings.balePhone+" را به‌عنوان گیرنده انتخاب کن.";
+  }
  }
  if(!$("messengerLinks").children.length){
   const note=document.createElement("p");note.className="muted";note.textContent="برای ارسال رسید با شماره تماس فروشگاه هماهنگ کن.";

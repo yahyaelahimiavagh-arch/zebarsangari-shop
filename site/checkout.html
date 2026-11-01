@@ -65,6 +65,7 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 .link .arrow{margin-right:auto;color:#a59b9b}.feedback{min-height:1em;font-size:12px;color:#28714d;margin:9px 0}
 @media(max-width:780px){.head{padding:13px 16px}.wrap{padding:19px 14px 45px}.layout{display:flex;flex-direction:column;gap:14px}.content{width:100%}.summary{width:100%;position:static;order:-1}.summary.panel{padding:15px 17px}.summary details{margin-top:4px}.panel{padding:19px 17px;border-radius:13px}.progress{gap:5px;margin:18px 0}.progress li:not(.sep){font-size:11px;gap:5px}.progress .sep{width:14px}.progress .number{width:24px;height:24px}h1{font-size:23px}}
 @media(max-width:520px){.row{grid-template-columns:1fr;gap:0}.actions .primary{flex:1}.carddigits{font-size:19px}.brand b{font-size:18px}}
+.linklist button.link{font:inherit;text-align:right;cursor:pointer;width:100%;color:inherit}.linklist button.link:hover{background:#f8edef}#confirmedAt{margin:12px 0 0;font-size:13px;color:#76686d}
 </style></head>
 <body>
 <header><div class="head"><a class="brand" href="/"><i>♡</i><b>زبرسنگری</b></a><a href="/#products" class="back">بازگشت به فروشگاه ←</a></div></header>
@@ -93,7 +94,7 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 <div class="actions"><button type="button" id="submitOrder" class="btn primary big">ثبت درخواست سفارش</button><button type="button" id="backDetails" class="btn secondary">بازگشت</button></div></section>
 <section class="panel" id="completeStage" hidden>
 <div class="center"><div class="check">✓</div><h2>درخواست سفارش ثبت شد</h2><p class="muted">کد سفارش را برای پیگیری نگه دار.</p>
-<div class="code"><strong id="orderCode"></strong><button id="copyCode" type="button" class="btn secondary">کپی کد</button></div></div>
+<div class="code"><strong id="orderCode"></strong><button id="copyCode" type="button" class="btn secondary">کپی کد</button></div><p class="muted" id="confirmedAt" hidden></p></div>
 <div class="complete-total" id="completeAmount" role="status" aria-live="polite">
 <span class="complete-total-label">جمع مبلغ کالاها</span>
 <strong class="complete-total-value" id="completeAmountValue"></strong>
@@ -101,7 +102,7 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 </div><hr><h2>پرداخت کارت‌به‌کارت</h2><p class="step-intro">قبل از واریز، مبلغ نهایی و هزینه ارسال را با فروشگاه هماهنگ کن.</p>
 <div id="paymentCard" class="pay-card" hidden><p class="bank" id="bankName"></p><div class="carddigits" id="cardNumber"></div><p id="cardHolder" class="holder"></p><button type="button" id="copyCard" class="btn secondary">کپی شماره کارت</button><div id="copyFeedback" class="feedback" role="status"></div></div>
 <p id="noCard" class="soft" hidden>برای دریافت اطلاعات پرداخت با فروشگاه هماهنگ کن.</p>
-<hr><h2>ارسال رسید پرداخت</h2><p class="step-intro">پیام‌رسان را انتخاب کن و تصویر رسید را همراه کد سفارش داخل همان برنامه بفرست.</p>
+<hr><h2>ارسال رسید پرداخت</h2><p class="step-intro">در واتساپ و تلگرام، متن سفارش داخل گفتگو آماده می‌شود؛ فقط ارسالش کن. در بله، صفحه اشتراک‌گذاری باز می‌شود و می‌توانی گفتگوی فروشگاه را انتخاب کنی. تصویر رسید را جداگانه بفرست.</p>
 <div id="messengerLinks" class="linklist"></div>
 <button type="button" id="copyMessage" class="btn secondary">کپی متن سفارش</button><div id="messageFeedback" class="feedback" role="status"></div><p id="baleHelp" class="muted" hidden></p>
 <p class="muted" style="margin-top:13px">رسید روی سایت ذخیره نمی‌شود. پرداخت پس از بررسی فروشگاه تأیید می‌شود.</p></section>
@@ -111,5 +112,5 @@ hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 <div class="totals"><div class="totalrow"><span>جمع کالاها</span><b id="subtotal"></b></div><div class="totalrow"><span>هزینه ارسال</span><span>پس از هماهنگی</span></div><div class="totalrow final"><span>مجموع کالاها</span><b id="finalTotal"></b></div></div>
 <p class="summary-foot">هزینه ارسال به مبلغ فوق اضافه می‌شود.</p></aside>
 </div></div>
-<script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script>
+<script src="/product-code.js" defer></script><script src="/bank-identify.js" defer></script><script src="/checkout.js" defer></script>
 </body></html>
