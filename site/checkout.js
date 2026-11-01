@@ -107,8 +107,12 @@ async function loadBasket(){
  let cart;
  try{cart=JSON.parse(localStorage.getItem(key)||"[]");}catch{cart=[];}
  if(!Array.isArray(cart)||!cart.length)throw Error("سبد خرید خالی است. ابتدا از فروشگاه محصول انتخاب کن.");
- const result=await fetchJSON("/api/products");
- const index=new Map((result.products||[]).map(p=>[p.id,p]));
+ // Only load as many catalog pages as needed to resolve the cart's products.
+ const products=await window.ZebarCatalogPages.load(
+  cursor=>fetchJSON(cursor?"/api/products?cursor="+encodeURIComponent(cursor):"/api/products"),
+  cart.map(entry=>entry?.id)
+ );
+ const index=new Map(products.map(p=>[p.id,p]));
  const grouped=new Map();
  for(const entry of cart){
   const product=index.get(entry.id);
