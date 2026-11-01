@@ -194,6 +194,10 @@ function renderProducts(){
  if(!visible.length){list.textContent="محصولی پیدا نشد.";return;}
  for(const p of visible){
   const {row,content,action}=rowBase();row.classList.toggle("selected",selectedProduct===p.id);
+  if(typeof p.imageKey==="string" && /^p\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(webp|png|jpg)$/.test(p.imageKey)){
+   const thumb=document.createElement("img");thumb.className="rank-thumb";
+   thumb.src="/media/"+p.imageKey;thumb.alt="";thumb.loading="lazy";thumb.onerror=()=>thumb.remove();row.insertBefore(thumb,content);
+  }
   const title=document.createElement("span");title.className="row-title";title.textContent=p.title;
   if(p.featured){const badge=document.createElement("span");badge.className="badge";badge.textContent="ویژه";title.append(badge);}
   const meta=document.createElement("span");meta.className="row-meta";meta.textContent=fa(p.priceToman)+" تومان · "+fa(p.categoryIds?.length||0)+" دسته"+(p.active?"":" · غیرفعال");
