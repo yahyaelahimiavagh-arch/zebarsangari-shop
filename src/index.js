@@ -1,7 +1,7 @@
 import {handleAdmin, serveMedia} from "./admin-api.js";
 import {handlePublicCheckout} from "./checkout.js";
 import {handleStudioPublic} from "./store-studio.js";
-// Worker entry point: static storefront + read-only catalog API. No checkout/admin writes.
+// Worker entry point: static storefront, catalog, admin and manual checkout APIs.
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
@@ -13,7 +13,26 @@ const response = (body, status = 200) =>
 
 const LEGACY_CATEGORIES=new Set(["women","men","kids","socks","accessories"]);
 const SAFE_CATEGORY=/^(?:[a-z][a-z0-9_-]{1,40}|[a-f0-9-]{36})$/;
-async function catalog(env, category){
+// Cursor pagination keeps the existing first-page response shape, while exposing
+// older products without OFFSET drift when new products arrive during browsing.
+const CATALOG_PAGE_SIZE=150;
+function decodeCursor(value){
+  if(value===null)return null;
+  if(typeof value!=="string"||value.length<4||value.length>512||!/^[A-Za-z0-9_-]+$/.test(value))return false;
+  try{
+    const parts=JSON.parse(atob(value.replace(/-/g,"+").replace(/_/g,"/")));
+    if(!Array.isArray(parts)||parts.length!==3 ||
+      !Number.isSafeInteger(parts[0]) || Math.abs(parts[0])>1000000000 ||
+      typeof parts[1]!=="string" || !/^[0-9TZ: .+\-]{10,40}$/.test(parts[1]) ||
+      typeof parts[2]!=="string" || !/^[A-Za-z0-9_-]{1,128}$/.test(parts[2]))return false;
+    return {rank:parts[0],createdAt:parts[1],id:parts[2]};
+  }catch{return false;}
+}
+function encodeCursor(row){
+  const json=JSON.stringify([Number(row.sort_order??1000),row.created_at,row.id]);
+  return btoa(json).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function catalog(env, category, cursor){
   const selected=typeof category==="string"&&SAFE_CATEGORY.test(category)?category:null;
   let q,enhanced=true;
   try{
@@ -21,21 +40,30 @@ async function catalog(env, category){
       "COALESCE(d.sort_order,1000) AS sort_order,COALESCE(d.featured,0) AS featured "+
       "FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id WHERE p.active=1 "+
       (selected?"AND (EXISTS(SELECT 1 FROM shop_product_categories m WHERE m.product_id=p.id AND m.category_id=?) OR (p.category=? AND NOT EXISTS(SELECT 1 FROM shop_product_categories m2 WHERE m2.product_id=p.id))) ":"")+
-      "ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC LIMIT 150";
-    q=selected?await env.DB.prepare(sql).bind(selected,selected).all():await env.DB.prepare(sql).all();
+      (cursor?"AND (COALESCE(d.sort_order,1000)>? OR (COALESCE(d.sort_order,1000)=? AND p.created_at<?) OR (COALESCE(d.sort_order,1000)=? AND p.created_at=? AND p.id<?)) ":"")+
+      "ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC,p.id DESC LIMIT 151";
+    const args=[...(selected?[selected,selected]:[]),...(cursor?[cursor.rank,cursor.rank,cursor.createdAt,cursor.rank,cursor.createdAt,cursor.id]:[])];
+    const statement=env.DB.prepare(sql);
+    q=(args.length?statement.bind(...args):statement).all();
+    q=await q;
   }catch(err){
     if(!String(err?.message||"").includes("no such table"))throw err;
     enhanced=false;
     const legacy=selected&&LEGACY_CATEGORIES.has(selected)?selected:null;
     const sql="SELECT id,slug,title_fa,description_fa,category,price_toman,compare_at_toman,created_at FROM products WHERE active=1 "+
-      (legacy?"AND category=? ":"")+"ORDER BY created_at DESC LIMIT 150";
-    q=legacy?await env.DB.prepare(sql).bind(legacy).all():await env.DB.prepare(sql).all();
+      (legacy?"AND category=? ":"")+
+      (cursor?"AND (created_at<? OR (created_at=? AND id<?)) ":"")+
+      "ORDER BY created_at DESC,id DESC LIMIT 151";
+    const args=[...(legacy?[legacy]:[]),...(cursor?[cursor.createdAt,cursor.createdAt,cursor.id]:[])];
+    const statement=env.DB.prepare(sql);
+    q=await (args.length?statement.bind(...args):statement).all();
   }
-  const products=q.results||[];
-  if(!products.length)return response({products:[],count:0});
-  // D1 permits at most 100 SQL bound parameters per query. Query related
-  // rows in bounded chunks rather than sending 101-150 product IDs at once.
-  // This preserves the legacy 150-product response until cursor pagination lands.
+  const page=q.results||[];
+  const hasMore=page.length>CATALOG_PAGE_SIZE;
+  const products=page.slice(0,CATALOG_PAGE_SIZE);
+  const nextCursor=hasMore?encodeCursor(products[products.length-1]):null;
+  if(!products.length)return response({products:[],count:0,nextCursor:null});
+  // Keep all supplementary D1 binds below the 100-parameter limit.
   const ids=products.map(p=>p.id);
   const rows=[{results:[]},{results:[]},{results:[]}];
   const CATALOG_BIND_CHUNK=75; // headroom for any future additional bound arguments
@@ -56,7 +84,7 @@ async function catalog(env, category){
   for(const v of rows[0].results||[])variants.get(v.product_id)?.push({id:v.id,sku:v.sku,size:v.size_label,color:v.color_label,stock:v.stock});
   for(const im of rows[1].results||[])images.get(im.product_id)?.push({id:im.id,key:im.object_key,alt:im.alt_fa,position:im.position});
   if(enhanced)for(const c of rows[2].results||[])cats.get(c.product_id)?.push(c.category_id);
-  return response({count:products.length,products:products.map(p=>({
+  return response({count:products.length,nextCursor,products:products.map(p=>({
     id:p.id,slug:p.slug,title:p.title_fa,description:p.description_fa,category:p.category,
     categoryIds:cats.get(p.id)?.length?cats.get(p.id):[p.category],
     sortOrder:p.sort_order??1000,featured:!!p.featured,
@@ -99,7 +127,9 @@ export default {
       return response({error: "catalog_not_configured"}, 503);
     }
     try {
-      return await catalog(env, url.searchParams.get("category"));
+      const cursor=decodeCursor(url.searchParams.get("cursor"));
+      if(cursor===false)return response({error:"invalid_cursor"},400);
+      return await catalog(env, url.searchParams.get("category"),cursor);
     } catch (error) {
       console.error("D1 catalog query failed:", error?.message);
       return response({error: "catalog_unavailable"}, 503);
