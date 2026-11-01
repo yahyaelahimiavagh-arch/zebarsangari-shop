@@ -253,7 +253,7 @@ function renderComplete(){
    const copied=await copy(message,null);
    if(copied){
     $("messageFeedback").textContent="متن سفارش خودکار کپی شد؛ آن را در گفتگوی بله جای‌گذاری و ارسال کن.";
-    window.open(settings.baleUsername?"https://ble.ir/"+settings.baleUsername:"https://web.bale.ai/","_blank","noopener,noreferrer");
+    window.location.assign(settings.baleUsername?"https://ble.ir/"+settings.baleUsername:"https://web.bale.ai/");
    }else{
     $("messageFeedback").textContent="اشتراک‌گذاری خودکار در این مرورگر ممکن نیست؛ دکمه «کپی متن سفارش» را بزن.";
    }
