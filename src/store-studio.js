@@ -140,7 +140,7 @@ export async function handleStudioPublic(req,env){
  try{
   if(!env.DB)return out({error:"not_configured"},503);
   const [cats,sections]=await Promise.all([allCategories(env.DB),layout(env.DB)]);
-  return out({categories:cats.filter(c=>c.visible),sections:sections.filter(s=>s.visible)});
+  return out({categories:cats.filter(c=>c.visible),sections});
  }catch(error){
   if(String(error?.message||"").includes("no such table"))return out({categories:[
    {id:"women",name:"زنانه",parentId:null,sortOrder:10,visible:true},
