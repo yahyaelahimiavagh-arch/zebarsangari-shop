@@ -4,6 +4,7 @@
 import {spawn} from "node:child_process";
 import {createHash} from "node:crypto";
 import {mkdir,readFile,stat,writeFile,unlink} from "node:fs/promises";
+import {createReadStream} from "node:fs";
 import {resolve,join} from "node:path";
 
 const dryRun=process.argv.includes("--dry-run");
@@ -18,6 +19,11 @@ const namespace=process.env.CF_KV_NAMESPACE_ID||
 const database=config.match(/"database_name"\s*:\s*"([^"]+)"/)?.[1];
 function ensure(condition,message){if(!condition)throw Error(message);}
 function checksum(data){return createHash("sha256").update(data).digest("hex");}
+async function fileChecksum(path){
+ const hash=createHash("sha256");
+ for await(const bytes of createReadStream(path))hash.update(bytes);
+ return hash.digest("hex");
+}
 async function cloudflare(path){
  const res=await fetch("https://api.cloudflare.com/client/v4"+path,{
   headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(30000)
@@ -82,7 +88,8 @@ async function backup(){
   if((i+1)%25===0)console.log("KV backed up:",i+1,"/",keys.length);
  }
  const manifest={format:"zebarsangari-backup-v1",createdAt:new Date().toISOString(),
-  database,sqlBytes:sqlStat.size,kvNamespace:namespace,kvCount:entries.length,entries};
+  database,sqlBytes:sqlStat.size,sqlSha256:await fileChecksum(join(output,"database.sql")),
+  kvNamespace:namespace,kvCount:entries.length,entries};
  await writeFile(join(output,"manifest.json"),JSON.stringify(manifest,null,2),{mode:0o600});
  await unlink(incomplete);
  console.log("COMPLETE:",output);
