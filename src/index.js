@@ -20,7 +20,7 @@ async function catalog(env, category){
     const sql="SELECT p.id,p.slug,p.title_fa,p.description_fa,p.category,p.price_toman,p.compare_at_toman,p.created_at,"+
       "COALESCE(d.sort_order,1000) AS sort_order,COALESCE(d.featured,0) AS featured "+
       "FROM products p LEFT JOIN shop_product_display d ON d.product_id=p.id WHERE p.active=1 "+
-      (selected?"AND (p.category=? OR EXISTS(SELECT 1 FROM shop_product_categories m WHERE m.product_id=p.id AND m.category_id=?)) ":"")+
+      (selected?"AND (EXISTS(SELECT 1 FROM shop_product_categories m WHERE m.product_id=p.id AND m.category_id=?) OR (p.category=? AND NOT EXISTS(SELECT 1 FROM shop_product_categories m2 WHERE m2.product_id=p.id))) ":"")+
       "ORDER BY COALESCE(d.sort_order,1000),p.created_at DESC LIMIT 150";
     q=selected?await env.DB.prepare(sql).bind(selected,selected).all():await env.DB.prepare(sql).all();
   }catch(err){
